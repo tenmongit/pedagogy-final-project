@@ -6,7 +6,7 @@ import { useDemoUsers } from '@/api/queries'
 import { useAuth } from '@/auth/context'
 import { ErrorState, LoadingRows } from '@/components/izden/PageHeader'
 import { Avatar, Logo } from '@/components/izden/marks'
-import { LanguageSwitcher } from '@/components/izden/Preferences'
+import { LanguageSwitcher, ThemeSwitcher } from '@/components/izden/Preferences'
 import { useT } from '@/i18n/context'
 
 export function LoginPage() {
@@ -31,9 +31,12 @@ export function LoginPage() {
     <main className="flex min-h-svh items-center justify-center bg-sidebar px-4 py-12">
       <div className="flex w-full max-w-sm flex-col gap-6">
         <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <Logo className="text-base" />
-            <LanguageSwitcher />
+            <div className="flex flex-wrap gap-2">
+              <LanguageSwitcher />
+              <ThemeSwitcher />
+            </div>
           </div>
           <h1 className="text-2xl font-semibold tracking-tight">{t.login.title}</h1>
           <p className="text-[13px] text-muted-foreground">{t.login.subtitle}</p>

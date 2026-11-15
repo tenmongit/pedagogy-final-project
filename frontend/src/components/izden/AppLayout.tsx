@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils'
 import { ErrorBoundary } from './ErrorBoundary'
 import { Avatar, DemoBadge, Logo } from './marks'
 import { NavContext } from './nav-context'
-import { LanguageSwitcher } from './Preferences'
+import { LanguageSwitcher, ThemeSwitcher } from './Preferences'
 
 /**
  * Каркас приложения.
@@ -107,8 +107,9 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       )}
 
       <div className="mt-auto flex flex-col gap-3">
-        <div className="px-2">
+        <div className="flex flex-wrap gap-2 px-2">
           <LanguageSwitcher />
+          <ThemeSwitcher />
         </div>
         {USE_MOCKS && (
           <div className="flex flex-wrap items-center gap-2 px-2">

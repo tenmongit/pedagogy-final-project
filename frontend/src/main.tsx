@@ -6,6 +6,7 @@ import { ApiError } from '@/api'
 import { AuthProvider } from '@/auth/AuthProvider'
 import { ErrorBoundary } from '@/components/izden/ErrorBoundary'
 import { I18nProvider } from '@/i18n/I18nProvider'
+import { ThemeProvider } from '@/theme/ThemeProvider'
 import { Toaster } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import App from './App'
@@ -23,6 +24,7 @@ const queryClient = new QueryClient({
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
+    <ThemeProvider>
     <I18nProvider>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
@@ -38,5 +40,6 @@ createRoot(document.getElementById('root')!).render(
       </BrowserRouter>
     </QueryClientProvider>
     </I18nProvider>
+    </ThemeProvider>
   </StrictMode>,
 )
