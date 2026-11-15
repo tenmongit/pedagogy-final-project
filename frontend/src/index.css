@@ -1,0 +1,225 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/inter";
+
+/* Тёмная тема — класс .dark на <html> (ставит ThemeProvider). Нужен и для dark:-классов shadcn. */
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Токены Izden. Интерфейс монохромный, цвет только со смыслом:
+ *   primary (кобальт) — действие и голос преподавателя;
+ *   ai (фиолетовый)   — любое использование ИИ;
+ *   destructive       — только ошибки ввода и сбои, не про честность студента;
+ *   success           — итог (оценено);
+ *   defense (янтарь)  — статус «Ожидает защиты».
+ * Источник: холст «Izden: ключевые экраны», лист «Состояния и цвет».
+ */
+
+@theme inline {
+  --font-heading: var(--font-sans);
+  --font-sans: "Inter Variable", system-ui, sans-serif;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --color-ai: var(--ai);
+  --color-ai-solid: var(--ai-solid);
+  --color-ai-soft: var(--ai-soft);
+  --color-ai-border: var(--ai-border);
+  --color-ai-line: var(--ai-line);
+  --color-teacher-soft: var(--teacher-soft);
+  --color-teacher-border: var(--teacher-border);
+  --color-teacher-ink: var(--teacher-ink);
+  --color-defense: var(--defense);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-border: var(--danger-border);
+  --color-danger-ink: var(--danger-ink);
+  --color-demo: var(--demo);
+  --color-demo-ink: var(--demo-ink);
+  --color-avatar: var(--avatar);
+  --color-stage-done: var(--stage-done);
+  --color-stage-todo: var(--stage-todo);
+  --color-dash: var(--dash);
+  --color-fg-subtle: var(--fg-subtle);
+  --color-fg-soft: var(--fg-soft);
+  --color-success-border: var(--success-border);
+  --color-success-ink: var(--success-ink);
+  --color-teacher-chip: var(--teacher-chip);
+  --color-disabled: var(--disabled);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+}
+
+:root {
+  --radius: 0.5rem;
+
+  --background: #ffffff;
+  --foreground: #1a1a1a;
+  --card: #ffffff;
+  --card-foreground: #1a1a1a;
+  --popover: #ffffff;
+  --popover-foreground: #1a1a1a;
+  --primary: #2457e6;
+  --primary-foreground: #ffffff;
+  --secondary: #f1f1f1;
+  --secondary-foreground: #1a1a1a;
+  --muted: #f5f5f5;
+  --muted-foreground: #6b6b6b;
+  --accent: #f1f1f1;
+  --accent-foreground: #1a1a1a;
+  --destructive: #dc2626;
+  --border: #ebebeb;
+  --input: #e3e3e3;
+  --ring: #2457e6;
+
+  --sidebar: #fafafa;
+  --sidebar-foreground: #1a1a1a;
+  --sidebar-border: #ebebeb;
+  --sidebar-accent: #efefef;
+  --sidebar-accent-foreground: #1a1a1a;
+  --sidebar-primary: #2457e6;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-ring: #2457e6;
+
+  --ai: #7c3aed;
+  /* Заливка кнопок ИИ с белым текстом: в тёмной теме --ai светлее, а заливка остаётся контрастной. */
+  --ai-solid: #7c3aed;
+  --ai-soft: #faf8ff;
+  --ai-border: #ddd6fe;
+  --ai-line: #ede9fe;
+  --teacher-soft: #f3f6fe;
+  --teacher-border: #dce5fb;
+  --teacher-ink: #1f4fd1;
+  --defense: #d97706;
+  --success: #16a34a;
+  --success-soft: #f0fdf4;
+  --danger-soft: #fef2f2;
+  --danger-border: #fca5a5;
+  --danger-ink: #b91c1c;
+  --demo: #f5f5f5;
+  --demo-ink: #525252;
+  --avatar: #e8eefc;
+  --stage-done: #8f8f8f;
+  --stage-todo: #a3a3a3;
+  --dash: #c7c7c7;
+  --fg-subtle: #4b5563;
+  --fg-soft: #2b2b2b;
+  --success-border: #bbf7d0;
+  --success-ink: #14532d;
+  --teacher-chip: #eef3fe;
+  --disabled: #e5e5e5;
+}
+
+/*
+ * Тёмная тема. Те же смыслы цвета, но светлее на тёмном фоне. Тексты проверены на контраст ≥ 4.5:1.
+ * --ai для текста светлее, --ai-solid для заливки кнопок остаётся насыщенным (белый текст на нём читается).
+ */
+.dark {
+  --background: #111113;
+  --foreground: #ececee;
+  --card: #161618;
+  --card-foreground: #ececee;
+  --popover: #18181b;
+  --popover-foreground: #ececee;
+  --primary: #3b6cf6;
+  --primary-foreground: #ffffff;
+  --secondary: #1f1f23;
+  --secondary-foreground: #ececee;
+  --muted: #1a1a1d;
+  --muted-foreground: #9d9da3;
+  --accent: #232327;
+  --accent-foreground: #ececee;
+  --destructive: #ef4444;
+  --border: #27272b;
+  --input: #34343a;
+  --ring: #5b85ff;
+
+  --sidebar: #141416;
+  --sidebar-foreground: #ececee;
+  --sidebar-border: #232327;
+  --sidebar-accent: #222226;
+  --sidebar-accent-foreground: #ececee;
+  --sidebar-primary: #3b6cf6;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-ring: #5b85ff;
+
+  --ai: #a78bfa;
+  --ai-solid: #7c3aed;
+  --ai-soft: #18142a;
+  --ai-border: #3b2f66;
+  --ai-line: #2a2246;
+  --teacher-soft: #121a30;
+  --teacher-border: #24345e;
+  --teacher-ink: #93b4ff;
+  --teacher-chip: #1a2747;
+  --defense: #f59e0b;
+  --success: #22c55e;
+  --success-soft: #0d1f14;
+  --success-border: #1e4d2f;
+  --success-ink: #86efac;
+  --danger-soft: #2a1214;
+  --danger-border: #7f1d1d;
+  --danger-ink: #fca5a5;
+  --demo: #1f1f23;
+  --demo-ink: #b4b4ba;
+  --avatar: #1e2a4a;
+  --stage-done: #7a7a80;
+  --stage-todo: #5c5c63;
+  --dash: #3f3f46;
+  --fg-subtle: #a1a1aa;
+  --fg-soft: #d4d4d8;
+  --disabled: #2a2a2f;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  /* Корень остаётся 16px, чтобы rem-отступы и поля ввода на iOS (16px — без автозума)
+     работали как задумано. Плотный текст интерфейса 14px задаётся на body. */
+  html {
+    @apply font-sans;
+    letter-spacing: -0.005em;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
