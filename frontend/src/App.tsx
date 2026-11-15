@@ -4,6 +4,7 @@ import { AppLayout } from '@/components/izden/AppLayout'
 import { AssignmentPage } from '@/pages/AssignmentPage'
 import { AssignmentsPage } from '@/pages/AssignmentsPage'
 import { LoginPage } from '@/pages/LoginPage'
+import { NewAssignmentPage } from '@/pages/NewAssignmentPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 import { WorkPage } from '@/pages/work/WorkPage'
 
@@ -14,6 +15,7 @@ export default function App() {
       <Route element={<RequireAuth />}>
         <Route element={<AppLayout />}>
           <Route index element={<AssignmentsPage />} />
+          <Route path="assignments/new" element={<NewAssignmentPage />} />
           <Route path="assignments/:assignmentId" element={<AssignmentPage />} />
           <Route path="works/:workId" element={<WorkPage />} />
           <Route path="*" element={<NotFoundPage />} />

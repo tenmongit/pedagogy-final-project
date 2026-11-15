@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { FileText, LayoutList, LogOut } from 'lucide-react'
+import { FileText, LayoutList, LogOut, Plus } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { USE_MOCKS } from '@/api'
@@ -73,6 +73,12 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           <LayoutList className="size-3.5 text-muted-foreground" aria-hidden />
           Задания
         </NavLink>
+        {user.role === 'teacher' && (
+          <NavLink to="/assignments/new" className={navItem} onClick={onNavigate}>
+            <Plus className="size-3.5 text-muted-foreground" aria-hidden />
+            Новое задание
+          </NavLink>
+        )}
       </nav>
 
       {user.role === 'student' && myWorks.length > 0 && (

@@ -1,3 +1,4 @@
+import { Plus } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { errorMessage, type Assignment } from '@/api'
 import { useAssignments } from '@/api/queries'
@@ -16,13 +17,22 @@ export function AssignmentsPage() {
       <PageHeader crumbs={[{ label: 'Задания' }]} />
       <PageBody>
         <div className="flex flex-col gap-6">
-          <div className="flex flex-col gap-1">
-            <PageTitle>Задания</PageTitle>
-            <p className="text-[13px] text-muted-foreground">
-              {user.role === 'student'
-                ? 'Тема → план → черновик → финал. ИИ подсказывает, но текст пишете вы.'
-                : 'Ваши задания и работы студентов по ним.'}
-            </p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div className="flex flex-col gap-1">
+              <PageTitle>Задания</PageTitle>
+              <p className="text-[13px] text-muted-foreground">
+                {user.role === 'student'
+                  ? 'Тема → план → черновик → финал. ИИ подсказывает, но текст пишете вы.'
+                  : 'Ваши задания и работы студентов по ним.'}
+              </p>
+            </div>
+            {user.role === 'teacher' && (
+              <Button asChild className="h-10 max-sm:w-full lg:h-[34px]">
+                <Link to="/assignments/new">
+                  <Plus aria-hidden /> Новое задание
+                </Link>
+              </Button>
+            )}
           </div>
 
           {assignments.isPending && <LoadingRows />}
