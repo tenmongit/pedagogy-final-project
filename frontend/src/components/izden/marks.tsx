@@ -1,8 +1,9 @@
 import type { Stage, WorkStatus } from '@/api'
-import { cn } from '@/lib/utils'
-import { STAGE_LABEL, STATUS_LABEL, initials } from '@/lib/labels'
-import { stageState, type StageState } from '@/lib/stages'
 import { STAGES } from '@/api/types'
+import { useT } from '@/i18n/context'
+import { initials } from '@/lib/labels'
+import { stageState, type StageState } from '@/lib/stages'
+import { cn } from '@/lib/utils'
 
 /** Логотип: кобальтовый квадрат «iz» + название. */
 export function Logo({ className }: { className?: string }) {
@@ -23,19 +24,21 @@ const STATUS_DOT: Record<WorkStatus, string> = {
 }
 
 export function StatusDot({ status, className }: { status: WorkStatus; className?: string }) {
+  const t = useT()
   return (
     <span className={cn('inline-flex items-center gap-1.5', className)}>
       <span aria-hidden className={cn('size-[7px] rounded-full', STATUS_DOT[status])} />
-      {STATUS_LABEL[status]}
+      {t.labels.status[status]}
     </span>
   )
 }
 
-/** Метка «ИИ» для заголовков блоков, связанных с ИИ. */
+/** Метка «ИИ» / «AI» / «ЖИ» для заголовков блоков, связанных с ИИ. */
 export function AiMark() {
+  const t = useT()
   return (
     <span className="inline-flex h-[18px] items-center rounded-[4px] border border-ai-border px-1.5 text-[11px] font-semibold text-ai">
-      ИИ
+      {t.common.ai}
     </span>
   )
 }
@@ -46,10 +49,11 @@ export function AiDot({ className }: { className?: string }) {
 }
 
 /** Пометка раздела 8 спеки: функция работает не по-настоящему. */
-export function DemoBadge({ children = 'Демо / в разработке' }: { children?: React.ReactNode }) {
+export function DemoBadge({ children }: { children?: React.ReactNode }) {
+  const t = useT()
   return (
     <span className="inline-flex min-h-[22px] items-center rounded-[4px] border border-input bg-demo px-2 py-0.5 text-xs font-medium text-demo-ink">
-      {children}
+      {children ?? t.common.demoBadge}
     </span>
   )
 }
@@ -59,7 +63,7 @@ export function Avatar({ name, className }: { name: string; className?: string }
     <span
       aria-hidden
       className={cn(
-        'flex size-6 shrink-0 items-center justify-center rounded-full bg-[#E8EEFC] text-[11px] font-semibold text-teacher-ink',
+        'flex size-6 shrink-0 items-center justify-center rounded-full bg-avatar text-[11px] font-semibold text-teacher-ink',
         className,
       )}
     >
@@ -72,9 +76,9 @@ export function Avatar({ name, className }: { name: string; className?: string }
 export function StageIcon({ state, className }: { state: StageState; className?: string }) {
   if (state === 'done') {
     return (
-      <svg aria-hidden viewBox="0 0 16 16" className={cn('size-3.5', className)}>
-        <circle cx="8" cy="8" r="7" fill="#8F8F8F" />
-        <path d="M5 8.2 7 10l4-4.2" fill="none" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      <svg aria-hidden viewBox="0 0 16 16" className={cn('size-3.5 text-stage-done', className)}>
+        <circle cx="8" cy="8" r="7" fill="currentColor" />
+        <path d="M5 8.2 7 10l4-4.2" fill="none" stroke="var(--background)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     )
   }
@@ -87,23 +91,24 @@ export function StageIcon({ state, className }: { state: StageState; className?:
     )
   }
   return (
-    <svg aria-hidden viewBox="0 0 16 16" className={cn('size-3.5', className)}>
-      <circle cx="8" cy="8" r="6.5" fill="none" stroke="#A3A3A3" strokeWidth="1.5" strokeDasharray="2.2 2.2" />
+    <svg aria-hidden viewBox="0 0 16 16" className={cn('size-3.5 text-stage-todo', className)}>
+      <circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeDasharray="2.2 2.2" />
     </svg>
   )
 }
 
 /** Лента этапов: Тема — План — Черновик — Финал. */
 export function StageStepper({ current }: { current: Stage }) {
+  const t = useT()
   return (
     // Телефон: 4 равные колонки без тире, чтобы лента не переносилась. От 640px — строка с тире.
-    <ol aria-label="Этапы работы" className="grid grid-cols-4 gap-1 text-xs sm:flex sm:flex-wrap sm:items-center sm:gap-1.5 sm:text-[13px]">
+    <ol aria-label={t.work.stagesAria} className="grid grid-cols-4 gap-1 text-xs sm:flex sm:flex-wrap sm:items-center sm:gap-1.5 sm:text-[13px]">
       {STAGES.map((stage, i) => {
         const state = stageState(stage, current)
         return (
           <li key={stage} className="flex min-w-0 items-center gap-1.5">
             {i > 0 && (
-              <span aria-hidden className="text-[#C7C7C7] max-sm:hidden">
+              <span aria-hidden className="text-dash max-sm:hidden">
                 —
               </span>
             )}
@@ -115,7 +120,7 @@ export function StageStepper({ current }: { current: Stage }) {
               )}
             >
               <StageIcon state={state} />
-              {STAGE_LABEL[stage]}
+              <span className="truncate">{t.labels.stage[stage]}</span>
             </span>
           </li>
         )

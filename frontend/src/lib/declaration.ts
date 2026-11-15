@@ -1,5 +1,6 @@
 import type { AIDeclaration, AIPurpose, AITool } from '@/api'
 import { LIMITS } from '@/api/types'
+import type { Messages } from '@/i18n/ru'
 
 export const EMPTY_DECLARATION: AIDeclaration = { used_ai: false, tools: [], purpose: [], description: '' }
 
@@ -21,15 +22,13 @@ export interface VersionErrors {
 }
 
 /** Те же правила, что на бэкенде (раздел 6 спеки), чтобы студент увидел ошибку до отправки. */
-export function validateVersion(text: string, d: AIDeclaration): VersionErrors {
+export function validateVersion(text: string, d: AIDeclaration, t: Messages): VersionErrors {
   const errors: VersionErrors = {}
-  if (!text.trim()) errors.text = 'Напишите текст версии.'
-  else if (text.length > LIMITS.textMax) errors.text = 'Текст длиннее 20 000 символов. Сократите его, чтобы сдать версию.'
+  if (!text.trim()) errors.text = t.declaration.errTextEmpty
+  else if (text.length > LIMITS.textMax) errors.text = t.declaration.errTextTooLong
   if (d.used_ai) {
-    if (d.tools.length === 0) errors.tools = 'Отметьте, какими инструментами ИИ вы пользовались.'
-    if (!d.description.trim()) {
-      errors.description = 'Вы отметили «Использовал ИИ: Да». Опишите своими словами, что именно взяли от ИИ.'
-    }
+    if (d.tools.length === 0) errors.tools = t.declaration.errTools
+    if (!d.description.trim()) errors.description = t.declaration.errDescription
   }
   return errors
 }

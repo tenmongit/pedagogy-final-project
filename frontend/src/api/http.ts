@@ -1,3 +1,4 @@
+import { getLocale } from '@/i18n/context'
 import type { IzdenApi } from './contract'
 import { ApiError, codeForStatus } from './errors'
 import { notifyUnauthorized } from './session'
@@ -7,7 +8,8 @@ import type { ErrorBody } from './types'
 const BASE = `${import.meta.env.VITE_API_URL ?? ''}/api`
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
-  const headers: Record<string, string> = { Accept: 'application/json' }
+  // Accept-Language: бэкенд может отвечать на языке интерфейса (сейчас сообщения у него русские).
+  const headers: Record<string, string> = { Accept: 'application/json', 'Accept-Language': getLocale() }
   const token = tokenStore.get()
   if (token) headers.Authorization = `Bearer ${token}`
   if (body !== undefined) headers['Content-Type'] = 'application/json'
@@ -20,7 +22,8 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
       body: body === undefined ? undefined : JSON.stringify(body),
     })
   } catch {
-    throw new ApiError(0, 'VALIDATION_ERROR', 'Сервер недоступен. Проверьте подключение.')
+    // status 0 = сеть недоступна; текст на нужном языке подставит errorMessage().
+    throw new ApiError(0, 'VALIDATION_ERROR', 'network')
   }
 
   if (res.ok) {
@@ -28,7 +31,8 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
     return (await res.json()) as T
   }
 
-  let message = `Ошибка ${res.status}`
+  // Пустое сообщение: errorMessage() подставит общий текст на языке интерфейса.
+  let message = ''
   let code = codeForStatus(res.status)
   try {
     const data = (await res.json()) as Partial<ErrorBody>

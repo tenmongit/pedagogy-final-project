@@ -6,30 +6,29 @@ import { useUser } from '@/auth/context'
 import { ErrorState, LoadingRows, PageBody, PageHeader, PageTitle } from '@/components/izden/PageHeader'
 import { StartOrOpenWork } from '@/components/izden/StartOrOpenWork'
 import { Button } from '@/components/ui/button'
-import { formatDate } from '@/lib/labels'
+import { useI18n } from '@/i18n/context'
 
 export function AssignmentsPage() {
   const user = useUser()
+  const { t } = useI18n()
   const assignments = useAssignments()
 
   return (
     <>
-      <PageHeader crumbs={[{ label: 'Задания' }]} />
+      <PageHeader crumbs={[{ label: t.assignments.title }]} />
       <PageBody>
         <div className="flex flex-col gap-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div className="flex flex-col gap-1">
-              <PageTitle>Задания</PageTitle>
+              <PageTitle>{t.assignments.title}</PageTitle>
               <p className="text-[13px] text-muted-foreground">
-                {user.role === 'student'
-                  ? 'Тема → план → черновик → финал. ИИ подсказывает, но текст пишете вы.'
-                  : 'Ваши задания и работы студентов по ним.'}
+                {user.role === 'student' ? t.assignments.studentSubtitle : t.assignments.teacherSubtitle}
               </p>
             </div>
             {user.role === 'teacher' && (
               <Button asChild className="h-10 max-sm:w-full lg:h-[34px]">
                 <Link to="/assignments/new">
-                  <Plus aria-hidden /> Новое задание
+                  <Plus aria-hidden /> {t.nav.newAssignment}
                 </Link>
               </Button>
             )}
@@ -41,7 +40,7 @@ export function AssignmentsPage() {
           )}
           {assignments.data?.length === 0 && (
             <p className="rounded-lg border border-dashed px-4 py-8 text-center text-[13px] text-muted-foreground">
-              Заданий пока нет.
+              {t.assignments.empty}
             </p>
           )}
 
@@ -59,6 +58,7 @@ export function AssignmentsPage() {
 }
 
 function AssignmentRow({ assignment: a, role }: { assignment: Assignment; role: 'student' | 'teacher' }) {
+  const { t, formatDate } = useI18n()
   return (
     <li className="flex flex-col gap-3 rounded-lg border px-4 py-3.5 sm:flex-row sm:items-center sm:gap-4">
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
@@ -66,13 +66,13 @@ function AssignmentRow({ assignment: a, role }: { assignment: Assignment; role: 
           {a.title}
         </Link>
         {a.description && <p className="text-[13px] text-muted-foreground">{a.description}</p>}
-        {a.deadline && <p className="text-xs text-muted-foreground">Дедлайн {formatDate(a.deadline)}</p>}
+        {a.deadline && <p className="text-xs text-muted-foreground">{t.assignments.deadline(formatDate(a.deadline))}</p>}
       </div>
       {role === 'student' ? (
         <StartOrOpenWork assignment={a} />
       ) : (
         <Button asChild variant="outline" className="max-lg:h-10 max-sm:w-full">
-          <Link to={`/assignments/${a.id}`}>Работы студентов</Link>
+          <Link to={`/assignments/${a.id}`}>{t.assignments.studentWorks}</Link>
         </Button>
       )}
     </li>

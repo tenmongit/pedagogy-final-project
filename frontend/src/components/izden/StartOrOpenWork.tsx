@@ -3,11 +3,13 @@ import { toast } from 'sonner'
 import { errorMessage, type Assignment } from '@/api'
 import { useStartWork } from '@/api/queries'
 import { Button } from '@/components/ui/button'
+import { useT } from '@/i18n/context'
 
 /** Для студента: «Начать» создаёт Work (POST /assignments/{id}/works), «Открыть» ведёт в неё. */
 export function StartOrOpenWork({ assignment }: { assignment: Assignment }) {
   const navigate = useNavigate()
   const start = useStartWork()
+  const t = useT()
 
   // На тач-экранах кнопка 40px, на телефоне во всю ширину карточки.
   const touch = 'max-lg:h-10 max-sm:w-full'
@@ -15,7 +17,7 @@ export function StartOrOpenWork({ assignment }: { assignment: Assignment }) {
   if (assignment.my_work_id != null) {
     return (
       <Button asChild variant="outline" className={touch}>
-        <Link to={`/works/${assignment.my_work_id}`}>Открыть</Link>
+        <Link to={`/works/${assignment.my_work_id}`}>{t.assignments.open}</Link>
       </Button>
     )
   }
@@ -30,7 +32,7 @@ export function StartOrOpenWork({ assignment }: { assignment: Assignment }) {
         })
       }
     >
-      {start.isPending ? 'Создаём…' : 'Начать'}
+      {start.isPending ? t.assignments.starting : t.assignments.start}
     </Button>
   )
 }

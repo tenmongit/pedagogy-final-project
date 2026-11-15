@@ -6,11 +6,13 @@ import { useDemoUsers } from '@/api/queries'
 import { useAuth } from '@/auth/context'
 import { ErrorState, LoadingRows } from '@/components/izden/PageHeader'
 import { Avatar, Logo } from '@/components/izden/marks'
-import { ROLE_LABEL } from '@/lib/labels'
+import { LanguageSwitcher } from '@/components/izden/Preferences'
+import { useT } from '@/i18n/context'
 
 export function LoginPage() {
   const { user, login } = useAuth()
   const navigate = useNavigate()
+  const t = useT()
 
   // После входа всегда на список заданий: возврат на прошлый адрес мог бы привести
   // другого демо-пользователя на чужую работу (403).
@@ -26,14 +28,15 @@ export function LoginPage() {
   const students = users.data?.filter((u) => u.role === 'student') ?? []
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-sidebar px-4 py-12">
+    <main className="flex min-h-svh items-center justify-center bg-sidebar px-4 py-12">
       <div className="flex w-full max-w-sm flex-col gap-6">
         <div className="flex flex-col gap-2">
-          <Logo className="text-base" />
-          <h1 className="text-2xl font-semibold tracking-tight">Вход в демо</h1>
-          <p className="text-[13px] text-muted-foreground">
-            Без пароля: выберите, за кого войти. Настоящей авторизации в MVP нет.
-          </p>
+          <div className="flex items-center justify-between gap-3">
+            <Logo className="text-base" />
+            <LanguageSwitcher />
+          </div>
+          <h1 className="text-2xl font-semibold tracking-tight">{t.login.title}</h1>
+          <p className="text-[13px] text-muted-foreground">{t.login.subtitle}</p>
         </div>
 
         {users.isPending && <LoadingRows rows={4} />}
@@ -41,8 +44,8 @@ export function LoginPage() {
 
         {users.data && (
           <div className="flex flex-col gap-4">
-            <UserGroup title="Преподаватель" users={teachers} pendingId={signIn.variables?.id} busy={signIn.isPending} onPick={(u) => signIn.mutate(u)} />
-            <UserGroup title="Студенты" users={students} pendingId={signIn.variables?.id} busy={signIn.isPending} onPick={(u) => signIn.mutate(u)} />
+            <UserGroup title={t.login.teacher} users={teachers} pendingId={signIn.variables?.id} busy={signIn.isPending} onPick={(u) => signIn.mutate(u)} />
+            <UserGroup title={t.login.students} users={students} pendingId={signIn.variables?.id} busy={signIn.isPending} onPick={(u) => signIn.mutate(u)} />
           </div>
         )}
 
@@ -59,6 +62,7 @@ function UserGroup(props: {
   pendingId?: number
   onPick: (u: User) => void
 }) {
+  const t = useT()
   if (props.users.length === 0) return null
   return (
     <section className="flex flex-col gap-1.5">
@@ -75,9 +79,9 @@ function UserGroup(props: {
               <Avatar name={u.name} className="size-7" />
               <span className="flex flex-1 flex-col leading-tight">
                 <span className="font-medium">{u.name}</span>
-                <span className="text-xs text-muted-foreground">{ROLE_LABEL[u.role]}</span>
+                <span className="text-xs text-muted-foreground">{t.labels.role[u.role]}</span>
               </span>
-              <span className="text-xs text-muted-foreground">{props.pendingId === u.id && props.busy ? 'Входим…' : ''}</span>
+              <span className="text-xs text-muted-foreground">{props.pendingId === u.id && props.busy ? t.login.signingIn : ''}</span>
               <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
             </button>
           </li>

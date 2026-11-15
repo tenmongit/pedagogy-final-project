@@ -1,6 +1,7 @@
 import { Menu } from 'lucide-react'
 import { Fragment } from 'react'
 import { Link } from 'react-router-dom'
+import { useT } from '@/i18n/context'
 import { cn } from '@/lib/utils'
 import { useOpenNav } from './nav-context'
 
@@ -15,18 +16,19 @@ export interface Crumb {
  */
 export function PageHeader({ crumbs, right }: { crumbs: Crumb[]; right?: React.ReactNode }) {
   const openNav = useOpenNav()
+  const t = useT()
   return (
     <header className="sticky top-0 z-20 flex h-12 shrink-0 items-center justify-between gap-3 border-b bg-background px-2 sm:px-5 lg:static">
       <div className="flex min-w-0 items-center gap-1">
         <button
           type="button"
           onClick={openNav}
-          aria-label="Открыть меню"
+          aria-label={t.common.openMenu}
           className="flex size-10 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground lg:hidden"
         >
           <Menu className="size-5" aria-hidden />
         </button>
-        <nav aria-label="Путь" className="flex min-w-0 items-center gap-1.5 text-[13px] text-muted-foreground">
+        <nav aria-label={t.common.breadcrumbs} className="flex min-w-0 items-center gap-1.5 text-[13px] text-muted-foreground">
           {crumbs.map((c, i) => {
             const last = i === crumbs.length - 1
             return (
@@ -68,8 +70,9 @@ export function PageTitle({ children }: { children: React.ReactNode }) {
 }
 
 export function LoadingRows({ rows = 3 }: { rows?: number }) {
+  const t = useT()
   return (
-    <div className="flex flex-col gap-3" aria-busy="true" aria-label="Загрузка">
+    <div className="flex flex-col gap-3" aria-busy="true" aria-label={t.common.loading}>
       {Array.from({ length: rows }, (_, i) => (
         <div key={i} className="h-16 animate-pulse rounded-lg bg-muted" />
       ))}
@@ -78,12 +81,13 @@ export function LoadingRows({ rows = 3 }: { rows?: number }) {
 }
 
 export function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
+  const t = useT()
   return (
     <div role="alert" className="flex flex-col items-start gap-2 rounded-lg border border-danger-border bg-danger-soft px-4 py-3 text-[13px]">
       <span className="text-danger-ink">{message}</span>
       {onRetry && (
         <button type="button" onClick={onRetry} className="min-h-8 font-medium text-foreground underline underline-offset-2">
-          Повторить
+          {t.common.retry}
         </button>
       )}
     </div>

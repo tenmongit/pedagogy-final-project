@@ -5,6 +5,7 @@ import { BrowserRouter } from 'react-router-dom'
 import { ApiError } from '@/api'
 import { AuthProvider } from '@/auth/AuthProvider'
 import { ErrorBoundary } from '@/components/izden/ErrorBoundary'
+import { I18nProvider } from '@/i18n/I18nProvider'
 import { Toaster } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import App from './App'
@@ -22,6 +23,7 @@ const queryClient = new QueryClient({
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
+    <I18nProvider>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <AuthProvider>
@@ -35,5 +37,6 @@ createRoot(document.getElementById('root')!).render(
         </AuthProvider>
       </BrowserRouter>
     </QueryClientProvider>
+    </I18nProvider>
   </StrictMode>,
 )

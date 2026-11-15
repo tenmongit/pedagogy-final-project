@@ -4,6 +4,7 @@ import { useWork } from '@/api/queries'
 import { useUser } from '@/auth/context'
 import { ErrorState, LoadingRows, PageBody, PageHeader, type Crumb } from '@/components/izden/PageHeader'
 import { StatusDot } from '@/components/izden/marks'
+import { useT } from '@/i18n/context'
 import { StudentWorkView } from './StudentWorkView'
 import { TeacherWorkView } from './TeacherWorkView'
 
@@ -14,9 +15,10 @@ import { TeacherWorkView } from './TeacherWorkView'
 export function WorkPage() {
   const id = Number(useParams().workId)
   const user = useUser()
+  const t = useT()
   const work = useWork(id)
 
-  const crumbs: Crumb[] = [{ label: 'Задания', to: '/' }]
+  const crumbs: Crumb[] = [{ label: t.nav.assignments, to: '/' }]
   if (work.data) {
     crumbs.push({ label: work.data.assignment.title, to: `/assignments/${work.data.assignment.id}` })
     if (user.role === 'teacher') crumbs.push({ label: work.data.student.name })

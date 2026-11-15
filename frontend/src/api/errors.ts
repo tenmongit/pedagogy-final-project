@@ -1,3 +1,4 @@
+import { getMessages } from '@/i18n/context'
 import type { ErrorCode } from './types'
 
 /** Ошибка API в формате спеки: { error: { code, message } }. */
@@ -26,11 +27,16 @@ export function codeForStatus(status: number): ErrorCode {
   return STATUS_TO_CODE[status] ?? 'VALIDATION_ERROR'
 }
 
-/** Текст для пользователя. Для 502 — формулировка из спеки (раздел 7). */
+/**
+ * Текст для пользователя на текущем языке интерфейса.
+ * Для 502 и сетевого сбоя — свой текст; иначе сообщение сервера (бэкенд получает Accept-Language).
+ */
 export function errorMessage(err: unknown): string {
+  const t = getMessages()
   if (err instanceof ApiError) {
-    if (err.code === 'AI_UNAVAILABLE') return 'Подсказка временно недоступна'
-    return err.message
+    if (err.code === 'AI_UNAVAILABLE') return t.errors.aiUnavailable
+    if (err.status === 0) return t.errors.network
+    return err.message || t.errors.generic
   }
-  return 'Что-то пошло не так. Попробуйте ещё раз.'
+  return t.errors.generic
 }

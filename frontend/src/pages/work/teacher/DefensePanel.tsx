@@ -6,7 +6,7 @@ import { useDefenseQuestions, useGenerateDefenseQuestions, useUpdateDefenseQuest
 import { AiMark, DemoBadge } from '@/components/izden/marks'
 import { LoadingRows } from '@/components/izden/PageHeader'
 import { Button } from '@/components/ui/button'
-import { formatDateTime } from '@/lib/labels'
+import { useI18n } from '@/i18n/context'
 
 const MIN = 3
 const MAX = 4
@@ -16,6 +16,8 @@ const MAX = 4
  * ИИ только предлагает вопросы; преподаватель их просматривает и может править.
  */
 export function DefensePanel({ work }: { work: WorkDetail }) {
+  const { t, formatDateTime } = useI18n()
+  const d = t.defense
   const hasFinal = work.stages.find((s) => s.stage === 'final')!.submissions.length > 0
   const dq = useDefenseQuestions(work.id, hasFinal)
   const gen = useGenerateDefenseQuestions(work.id)
@@ -26,15 +28,11 @@ export function DefensePanel({ work }: { work: WorkDetail }) {
 
   const generate = () => {
     setConfirmRegen(false)
-    gen.mutate(undefined, { onSuccess: () => toast.success('Вопросы сгенерированы') })
+    gen.mutate(undefined, { onSuccess: () => toast.success(d.generated) })
   }
 
   const draftError =
-    draft && (draft.length < MIN || draft.length > MAX)
-      ? 'Вопросов должно быть 3 или 4.'
-      : draft?.some((q) => !q.question.trim())
-        ? 'У каждого вопроса должен быть текст.'
-        : null
+    draft && (draft.length < MIN || draft.length > MAX) ? d.errCount : draft?.some((q) => !q.question.trim()) ? d.errEmpty : null
 
   const save = () => {
     setShowErrors(true)
@@ -45,7 +43,7 @@ export function DefensePanel({ work }: { work: WorkDetail }) {
         onSuccess: () => {
           setDraft(null)
           setShowErrors(false)
-          toast.success('Вопросы сохранены')
+          toast.success(d.saved)
         },
         onError: (err) => toast.error(errorMessage(err)),
       },
@@ -53,17 +51,14 @@ export function DefensePanel({ work }: { work: WorkDetail }) {
   }
 
   const data = dq.data
-  const genError = gen.error instanceof ApiError && gen.error.code === 'AI_UNAVAILABLE'
-    ? 'ИИ временно недоступен. Попробуйте ещё раз через минуту.'
-    : gen.error
-      ? errorMessage(gen.error)
-      : null
+  const genError =
+    gen.error instanceof ApiError && gen.error.code === 'AI_UNAVAILABLE' ? d.aiDown : gen.error ? errorMessage(gen.error) : null
 
   return (
     <section aria-labelledby="dq-title" className="flex flex-col gap-3 rounded-[10px] border border-ai-border bg-ai-soft p-4">
       <h2 id="dq-title" className="flex items-center gap-2 text-sm font-semibold">
         <AiMark />
-        Вопросы для защиты
+        {d.title}
       </h2>
       {AI_IS_DEMO && (
         <div>
@@ -71,21 +66,21 @@ export function DefensePanel({ work }: { work: WorkDetail }) {
         </div>
       )}
       <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-        <Lock className="size-3" aria-hidden />
-        Видите только вы
-        {data && ` · сгенерировано ${formatDateTime(data.created_at)} · ${data.edited_by_teacher ? 'изменено вами' : 'вами не изменялись'}`}
+        <Lock className="size-3 shrink-0" aria-hidden />
+        <span>
+          {d.onlyYou}
+          {data && ` · ${d.generatedAt(formatDateTime(data.created_at), data.edited_by_teacher)}`}
+        </span>
       </p>
 
-      {!hasFinal && (
-        <p className="text-[13px] text-muted-foreground">Вопросы можно сгенерировать после того, как студент сдаст финальную версию.</p>
-      )}
+      {!hasFinal && <p className="text-[13px] text-muted-foreground">{d.needFinal}</p>}
 
       {hasFinal && dq.isPending && <LoadingRows rows={1} />}
       {hasFinal && dq.isError && <p className="text-[13px] text-danger-ink">{errorMessage(dq.error)}</p>}
 
       {hasFinal && dq.isSuccess && !data && !draft && (
-        <Button onClick={generate} disabled={gen.isPending} className="h-10 bg-ai text-white hover:bg-ai/90 lg:h-8">
-          {gen.isPending ? 'Генерируем…' : 'Сгенерировать вопросы'}
+        <Button onClick={generate} disabled={gen.isPending} className="h-10 bg-ai-solid text-white hover:bg-ai-solid/90 lg:h-8">
+          {gen.isPending ? d.generating : d.generate}
         </Button>
       )}
 
@@ -97,23 +92,27 @@ export function DefensePanel({ work }: { work: WorkDetail }) {
                 <span className="w-4 shrink-0 text-[13px] text-muted-foreground">{i + 1}</span>
                 <div className="flex flex-col gap-1 text-[13px]">
                   <p>{q.question}</p>
-                  {q.why && <p className="text-xs text-muted-foreground">Основание: {q.why}</p>}
+                  {q.why && <p className="text-xs text-muted-foreground">{d.why(q.why)}</p>}
                 </div>
               </li>
             ))}
           </ol>
           {confirmRegen ? (
             <div role="alertdialog" aria-labelledby="regen-q" className="flex flex-col gap-2 rounded-md border bg-background p-3 text-[13px]">
-              <p id="regen-q">Перегенерация заменит ваши правки. Продолжить?</p>
+              <p id="regen-q">{d.regenConfirm}</p>
               <div className="flex gap-2">
-                <Button onClick={generate} className="h-10 lg:h-8">Да, заменить</Button>
-                <Button variant="outline" onClick={() => setConfirmRegen(false)} className="h-10 lg:h-8">Отмена</Button>
+                <Button onClick={generate} className="h-10 lg:h-8">
+                  {d.regenYes}
+                </Button>
+                <Button variant="outline" onClick={() => setConfirmRegen(false)} className="h-10 lg:h-8">
+                  {t.common.cancel}
+                </Button>
               </div>
             </div>
           ) : (
             <div className="flex flex-wrap gap-2">
               <Button variant="outline" onClick={() => setDraft(data.questions.map((q) => ({ ...q })))} className="h-10 lg:h-8">
-                Изменить
+                {d.edit}
               </Button>
               <Button
                 variant="outline"
@@ -121,7 +120,7 @@ export function DefensePanel({ work }: { work: WorkDetail }) {
                 disabled={gen.isPending}
                 className="h-10 border-ai-border text-ai hover:text-ai lg:h-8"
               >
-                {gen.isPending ? 'Генерируем…' : 'Перегенерировать'}
+                {gen.isPending ? d.generating : d.regenerate}
               </Button>
             </div>
           )}
@@ -132,14 +131,14 @@ export function DefensePanel({ work }: { work: WorkDetail }) {
         <div className="flex flex-col gap-3">
           {draft.map((q, i) => (
             <fieldset key={i} className="flex flex-col gap-1.5 rounded-md border bg-background p-2.5">
-              <legend className="sr-only">Вопрос {i + 1}</legend>
+              <legend className="sr-only">{d.questionN(i + 1)}</legend>
               <div className="flex items-center justify-between">
                 <label htmlFor={`dq-q-${i}`} className="text-xs font-medium">
-                  Вопрос {i + 1}
+                  {d.questionN(i + 1)}
                 </label>
                 <button
                   type="button"
-                  aria-label={`Удалить вопрос ${i + 1}`}
+                  aria-label={d.removeQuestion(i + 1)}
                   disabled={draft.length <= MIN}
                   onClick={() => setDraft(draft.filter((_, j) => j !== i))}
                   className="flex size-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted disabled:opacity-40"
@@ -152,16 +151,16 @@ export function DefensePanel({ work }: { work: WorkDetail }) {
                 rows={2}
                 value={q.question}
                 onChange={(e) => setDraft(draft.map((x, j) => (j === i ? { ...x, question: e.target.value } : x)))}
-                className="resize-y rounded-md border border-input px-2 py-1.5 text-base outline-none focus-visible:ring-3 focus-visible:ring-ring/25 sm:text-[13px]"
+                className="resize-y rounded-md border border-input bg-background px-2 py-1.5 text-base outline-none focus-visible:ring-3 focus-visible:ring-ring/25 sm:text-[13px]"
               />
               <label htmlFor={`dq-w-${i}`} className="text-xs text-muted-foreground">
-                Основание (видите только вы)
+                {d.whyLabel}
               </label>
               <input
                 id={`dq-w-${i}`}
                 value={q.why}
                 onChange={(e) => setDraft(draft.map((x, j) => (j === i ? { ...x, why: e.target.value } : x)))}
-                className="h-10 rounded-md border border-input px-2 text-base outline-none focus-visible:ring-3 focus-visible:ring-ring/25 sm:h-8 sm:text-[13px]"
+                className="h-10 rounded-md border border-input bg-background px-2 text-base outline-none focus-visible:ring-3 focus-visible:ring-ring/25 sm:h-8 sm:text-[13px]"
               />
             </fieldset>
           ))}
@@ -171,7 +170,7 @@ export function DefensePanel({ work }: { work: WorkDetail }) {
             onClick={() => setDraft([...draft, { question: '', why: '' }])}
             className="h-10 self-start lg:h-8"
           >
-            <Plus aria-hidden /> Добавить вопрос
+            <Plus aria-hidden /> {d.addQuestion}
           </Button>
           {showErrors && draftError && (
             <p role="alert" className="text-xs text-danger-ink">
@@ -180,7 +179,7 @@ export function DefensePanel({ work }: { work: WorkDetail }) {
           )}
           <div className="flex gap-2">
             <Button onClick={save} disabled={upd.isPending} className="h-10 lg:h-8">
-              {upd.isPending ? 'Сохраняем…' : 'Сохранить'}
+              {upd.isPending ? t.common.saving : t.common.save}
             </Button>
             <Button
               variant="outline"
@@ -190,7 +189,7 @@ export function DefensePanel({ work }: { work: WorkDetail }) {
               }}
               className="h-10 lg:h-8"
             >
-              Отмена
+              {t.common.cancel}
             </Button>
           </div>
         </div>
@@ -202,7 +201,7 @@ export function DefensePanel({ work }: { work: WorkDetail }) {
         </p>
       )}
 
-      <p className="text-xs text-muted-foreground">ИИ только предлагает вопросы. Просмотрите их перед защитой.</p>
+      <p className="text-xs text-muted-foreground">{d.note}</p>
     </section>
   )
 }

@@ -8,9 +8,9 @@ import { PageTitle } from '@/components/izden/PageHeader'
 import { StageStepper, StatusDot } from '@/components/izden/marks'
 import { FeedbackItem, GradeCard, Properties } from '@/components/izden/work'
 import { Button } from '@/components/ui/button'
+import { useI18n } from '@/i18n/context'
 import { EMPTY_DECLARATION, normalizeDeclaration, validateVersion } from '@/lib/declaration'
 import { hintsAfterLast } from '@/lib/hints'
-import { STAGE_LABEL, formatDate, formatDateTime } from '@/lib/labels'
 import { useNewFeedbackIds } from '@/lib/seen'
 import { draftKey, readLocal, writeLocal } from '@/lib/storage'
 import { cn } from '@/lib/utils'
@@ -28,17 +28,19 @@ export function StudentWorkView({ work }: { work: WorkDetail }) {
 
 function StageWorkspace({ work }: { work: WorkDetail }) {
   const user = useUser()
+  const { t, formatDate, formatDateTime, formatNumber } = useI18n()
   const stage = work.current_stage
+  const stageLabel = t.labels.stage[stage]
   const stageIndex = STAGES.indexOf(stage)
   const versions = work.stages[stageIndex].submissions
   const last = versions.at(-1)
+  const prevLast = stageIndex > 0 ? work.stages[stageIndex - 1].submissions.at(-1) : undefined
   const graded = work.status === 'graded'
   const hintsSince = hintsAfterLast(work.hints, stage, versions)
 
   // --- Текст: черновик живёт в браузере, иначе берём последнюю сданную версию.
   // Финал обычно дорабатывают из черновика, поэтому на пустом финале подставляем последний черновик.
   const key = draftKey(work.id, stage)
-  const prevLast = stageIndex > 0 ? work.stages[stageIndex - 1].submissions.at(-1) : undefined
   const [text, setText] = useState(
     () => readLocal(key) ?? last?.text ?? (stage === 'final' ? (prevLast?.text ?? '') : ''),
   )
@@ -60,7 +62,7 @@ function StageWorkspace({ work }: { work: WorkDetail }) {
 
   // --- Сдача версии.
   const [showErrors, setShowErrors] = useState(false)
-  const errors = validateVersion(text, decl)
+  const errors = validateVersion(text, decl, t)
   const hasErrors = Object.keys(errors).length > 0
   const submit = useSubmitVersion(work.id)
   const handleSubmit = () => {
@@ -70,7 +72,7 @@ function StageWorkspace({ work }: { work: WorkDetail }) {
       { text, ai_declaration: normalizeDeclaration(decl) },
       {
         onSuccess: (s) => {
-          toast.success(`Версия ${s.version} сдана`)
+          toast.success(t.student.submitted(s.version))
           writeLocal(key, null)
           setDecl(EMPTY_DECLARATION)
           setAutoIzden(false)
@@ -83,11 +85,12 @@ function StageWorkspace({ work }: { work: WorkDetail }) {
 
   // --- Переход на следующий этап (назад нельзя).
   const nextStage = STAGES[stageIndex + 1]
+  const nextLabel = nextStage ? t.labels.stage[nextStage] : ''
   const [confirmAdvance, setConfirmAdvance] = useState(false)
   const advance = useAdvanceWork(work.id)
   const handleAdvance = () =>
     advance.mutate(undefined, {
-      onSuccess: (w) => toast.success(`Открыт этап «${STAGE_LABEL[w.current_stage]}»`),
+      onSuccess: (w) => toast.success(t.student.advanced(t.labels.stage[w.current_stage])),
       onError: (err) => toast.error(errorMessage(err)),
     })
 
@@ -96,7 +99,6 @@ function StageWorkspace({ work }: { work: WorkDetail }) {
   const topFeedback = feedbackSource?.feedback ?? []
   const fresh = useNewFeedbackIds(user.id, topFeedback.map((f) => f.id))
 
-  const textCount = text.length
   const nextVersion = versions.length + 1
 
   // Сетка: на десктопе две колонки (рабочая зона + история слева, свойства и подсказки справа).
@@ -108,24 +110,24 @@ function StageWorkspace({ work }: { work: WorkDetail }) {
           <StageStepper current={stage} />
 
           <div className="flex flex-col gap-1.5">
-            <PageTitle>{STAGE_LABEL[stage]}</PageTitle>
+            <PageTitle>{stageLabel}</PageTitle>
             <p className="text-[13px] text-muted-foreground">
               {graded
-                ? 'Работа оценена, сдача закрыта'
+                ? t.student.gradedClosed
                 : versions.length === 0
-                  ? 'Версия 1 · ещё не сдана'
+                  ? t.student.firstNotSubmitted
                   : dirty
-                    ? `Версия ${nextVersion} · не сдана · черновик сохранён в браузере`
-                    : `Сдана версия ${last!.version} · ${formatDateTime(last!.created_at)}`}
+                    ? t.student.draftSaved(nextVersion)
+                    : t.student.submittedAt(last!.version, formatDateTime(last!.created_at))}
             </p>
           </div>
 
-          {work.grade && <GradeCard grade={work.grade} author="Преподаватель" />}
+          {work.grade && <GradeCard grade={work.grade} author={t.work.teacher} />}
 
           {work.status === 'awaiting_defense' && (
             <p className="rounded-lg border px-4 py-3 text-[13px]">
-              <span className="font-medium">Финал сдан, работа ждёт устной защиты.</span>{' '}
-              <span className="text-muted-foreground">До оценки можно сдать новую версию финала.</span>
+              <span className="font-medium">{t.student.awaitingDefense}</span>{' '}
+              <span className="text-muted-foreground">{t.student.awaitingDefenseHint}</span>
             </p>
           )}
 
@@ -133,8 +135,11 @@ function StageWorkspace({ work }: { work: WorkDetail }) {
             <FeedbackItem
               key={f.id}
               feedback={f}
-              author="Преподаватель"
-              title={`Фидбэк к версии ${feedbackSource!.version}${feedbackSource!.stage !== stage ? ` · ${STAGE_LABEL[feedbackSource!.stage]}` : ''}`}
+              author={t.work.teacher}
+              title={t.work.feedbackTo(
+                feedbackSource!.version,
+                feedbackSource!.stage !== stage ? t.labels.stage[feedbackSource!.stage] : undefined,
+              )}
               isNew={fresh.has(f.id)}
             />
           ))}
@@ -143,14 +148,14 @@ function StageWorkspace({ work }: { work: WorkDetail }) {
             <>
               <div className="flex flex-col gap-1.5">
                 <label htmlFor="stage-text" className="sr-only">
-                  Текст этапа «{STAGE_LABEL[stage]}»
+                  {t.student.textLabel(stageLabel)}
                 </label>
                 <textarea
                   id="stage-text"
                   rows={14}
                   value={text}
                   onChange={(e) => changeText(e.target.value)}
-                  placeholder={PLACEHOLDER[stage]}
+                  placeholder={t.student.placeholder[stage]}
                   aria-invalid={showErrors && errors.text ? true : undefined}
                   aria-describedby="stage-text-meta"
                   className="min-h-[280px] w-full resize-y rounded-lg border border-border bg-background px-4 py-3 text-base leading-[1.75] tracking-[-0.01em] outline-none focus-visible:ring-3 focus-visible:ring-ring/20 lg:rounded-none lg:border-0 lg:px-0 lg:focus-visible:ring-0"
@@ -159,9 +164,9 @@ function StageWorkspace({ work }: { work: WorkDetail }) {
                   id="stage-text-meta"
                   className="flex flex-col gap-1 border-t pt-2.5 text-xs text-muted-foreground sm:flex-row sm:justify-between sm:gap-3"
                 >
-                  <span>Текст уходит во внешний ИИ-сервис, когда вы просите подсказку. Не пишите ФИО и личные данные.</span>
-                  <span className={cn('shrink-0 tabular-nums', textCount > LIMITS.textMax && 'font-medium text-danger-ink')}>
-                    {textCount.toLocaleString('ru')} / {LIMITS.textMax.toLocaleString('ru')}
+                  <span>{t.student.piiNote}</span>
+                  <span className={cn('shrink-0 tabular-nums', text.length > LIMITS.textMax && 'font-medium text-danger-ink')}>
+                    {formatNumber(text.length)} / {formatNumber(LIMITS.textMax)}
                   </span>
                 </div>
                 {showErrors && errors.text && (
@@ -182,7 +187,7 @@ function StageWorkspace({ work }: { work: WorkDetail }) {
               <div className="flex flex-col gap-3 border-t pt-4">
                 <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
                   <Button onClick={handleSubmit} disabled={submit.isPending} className="h-10 max-sm:w-full lg:h-[34px]">
-                    {submit.isPending ? 'Сдаём…' : `Сдать версию ${nextVersion}`}
+                    {submit.isPending ? t.student.submitting : t.student.submit(nextVersion)}
                   </Button>
                   {nextStage && !confirmAdvance && (
                     <Button
@@ -191,31 +196,29 @@ function StageWorkspace({ work }: { work: WorkDetail }) {
                       disabled={versions.length === 0}
                       className="h-10 max-sm:w-full lg:h-[34px]"
                     >
-                      Перейти к этапу «{STAGE_LABEL[nextStage]}»
+                      {t.student.advance(nextLabel)}
                     </Button>
                   )}
-                  {showErrors && hasErrors && (
-                    <span className="text-xs text-danger-ink">Исправьте ошибки выше, чтобы сдать версию.</span>
-                  )}
+                  {showErrors && hasErrors && <span className="text-xs text-danger-ink">{t.student.fixErrors}</span>}
                 </div>
                 {nextStage && versions.length === 0 && (
-                  <p className="text-xs text-muted-foreground">Перейти дальше можно после первой сданной версии.</p>
+                  <p className="text-xs text-muted-foreground">{t.student.advanceAfterFirst}</p>
                 )}
                 {nextStage && confirmAdvance && (
                   <div role="alertdialog" aria-labelledby="advance-q" className="flex flex-col gap-2 rounded-lg border px-4 py-3 text-[13px]">
                     <p id="advance-q">
-                      <span className="font-medium">Перейти к этапу «{STAGE_LABEL[nextStage]}»?</span>{' '}
+                      <span className="font-medium">{t.student.advanceQuestion(nextLabel)}</span>{' '}
                       <span className="text-muted-foreground">
-                        Вернуться назад будет нельзя.
-                        {dirty && ' Несданный текст этого этапа останется только в черновике.'}
+                        {t.student.advanceNoBack}
+                        {dirty && ` ${t.student.advanceDirty}`}
                       </span>
                     </p>
                     <div className="flex flex-col gap-2 sm:flex-row">
                       <Button onClick={handleAdvance} disabled={advance.isPending} className="h-10 lg:h-8">
-                        {advance.isPending ? 'Переходим…' : 'Да, перейти'}
+                        {advance.isPending ? t.student.advancing : t.student.advanceYes}
                       </Button>
                       <Button variant="outline" onClick={() => setConfirmAdvance(false)} className="h-10 lg:h-8">
-                        Остаться
+                        {t.student.stay}
                       </Button>
                     </div>
                   </div>
@@ -223,21 +226,20 @@ function StageWorkspace({ work }: { work: WorkDetail }) {
               </div>
             </>
           )}
-
         </div>
       </div>
 
       <aside
-        aria-label="Свойства и подсказки"
+        aria-label={t.student.asideLabel}
         className="flex flex-col gap-6 border-y px-4 py-6 sm:px-8 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:border-y-0 lg:border-l lg:px-5 lg:py-5"
       >
         <Properties
           rows={[
-            ['Статус', <StatusDot key="s" status={work.status} />],
-            ['Этап', `${STAGE_LABEL[stage]} · ${stageIndex + 1} из 4`],
-            ['Версий на этапе', versions.length],
-            ['Дедлайн', work.assignment.deadline ? formatDate(work.assignment.deadline) : '—'],
-            ['Задание', work.assignment.title],
+            [t.work.prop.status, <StatusDot key="s" status={work.status} />],
+            [t.work.prop.stage, t.work.stageOf(stageLabel, stageIndex + 1)],
+            [t.work.prop.versionsOnStage, versions.length],
+            [t.work.prop.deadline, work.assignment.deadline ? formatDate(work.assignment.deadline) : '—'],
+            [t.work.prop.assignment, work.assignment.title],
           ]}
         />
         <HintsPanel work={work} stage={stage} text={text} readOnly={graded} onHintAdded={onHintAdded} />
@@ -251,11 +253,4 @@ function StageWorkspace({ work }: { work: WorkDetail }) {
       </div>
     </div>
   )
-}
-
-const PLACEHOLDER: Record<WorkDetail['current_stage'], string> = {
-  topic: 'Сформулируйте тему: что именно, для кого и на каком материале вы хотите исследовать.',
-  plan: 'Набросайте план: части работы и что доказывает каждая.',
-  draft: 'Пишите черновик. ИИ может подсказать слабые места, но текст пишете вы.',
-  final: 'Финальная версия: проверьте структуру, ссылки и то, что вывод отвечает на вопрос.',
 }

@@ -5,11 +5,12 @@ import { useUser } from '@/auth/context'
 import { ErrorState, LoadingRows, PageBody, PageHeader, PageTitle } from '@/components/izden/PageHeader'
 import { StartOrOpenWork } from '@/components/izden/StartOrOpenWork'
 import { AiDot, StatusDot } from '@/components/izden/marks'
-import { STAGE_LABEL, formatDate } from '@/lib/labels'
+import { useI18n, useT } from '@/i18n/context'
 
 export function AssignmentPage() {
   const id = Number(useParams().assignmentId)
   const user = useUser()
+  const t = useT()
   // У студента my_work_id приходит только в списке заданий, поэтому берём задание оттуда.
   const list = useAssignments(user.role === 'student')
   const single = useAssignment(id, user.role === 'teacher')
@@ -18,11 +19,11 @@ export function AssignmentPage() {
 
   return (
     <>
-      <PageHeader crumbs={[{ label: 'Задания', to: '/' }, { label: assignment?.title ?? '…' }]} />
+      <PageHeader crumbs={[{ label: t.nav.assignments, to: '/' }, { label: assignment?.title ?? '…' }]} />
       <PageBody wide={user.role === 'teacher'}>
         {query.isPending && <LoadingRows />}
         {query.isError && <ErrorState message={errorMessage(query.error)} onRetry={() => query.refetch()} />}
-        {query.isSuccess && !assignment && <ErrorState message="Задание не найдено" />}
+        {query.isSuccess && !assignment && <ErrorState message={t.assignments.notFound} />}
         {assignment && (
           <div className="flex flex-col gap-6">
             <AssignmentHead assignment={assignment} />
@@ -41,17 +42,19 @@ export function AssignmentPage() {
 }
 
 function AssignmentHead({ assignment: a }: { assignment: Assignment }) {
+  const { t, formatDate } = useI18n()
   return (
     <div className="flex flex-col gap-1.5">
       <PageTitle>{a.title}</PageTitle>
       {a.description && <p className="text-muted-foreground">{a.description}</p>}
-      {a.deadline && <p className="text-[13px] text-muted-foreground">Дедлайн {formatDate(a.deadline)}</p>}
+      {a.deadline && <p className="text-[13px] text-muted-foreground">{t.assignments.deadline(formatDate(a.deadline))}</p>}
     </div>
   )
 }
 
 /** Список работ для преподавателя: GET /api/assignments/{id}/works → WorkSummary[]. */
 function WorksTable({ assignmentId }: { assignmentId: number }) {
+  const t = useT()
   const works = useWorks(assignmentId)
 
   if (works.isPending) return <LoadingRows />
@@ -59,14 +62,14 @@ function WorksTable({ assignmentId }: { assignmentId: number }) {
   if (works.data.length === 0) {
     return (
       <p className="rounded-lg border border-dashed px-4 py-8 text-center text-[13px] text-muted-foreground">
-        Никто из студентов ещё не начал работу.
+        {t.assignments.worksEmpty}
       </p>
     )
   }
 
   return (
     <section className="flex flex-col gap-3">
-      <h2 className="text-sm font-semibold">Работы студентов</h2>
+      <h2 className="text-sm font-semibold">{t.assignments.studentWorks}</h2>
 
       {/* Телефон: карточки вместо таблицы. */}
       <ul className="flex flex-col gap-2 md:hidden">
@@ -78,13 +81,13 @@ function WorksTable({ assignmentId }: { assignmentId: number }) {
                 <StatusDot status={w.status} className="text-[13px]" />
               </span>
               <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-muted-foreground">
-                <span>{STAGE_LABEL[w.current_stage]}</span>
-                <span>Версий: {w.submissions_count}</span>
+                <span>{t.labels.stage[w.current_stage]}</span>
+                <span>{t.assignments.versionsCount(w.submissions_count)}</span>
                 <span className="inline-flex items-center gap-1.5">
                   {w.hints_count > 0 && <AiDot />}
-                  Подсказок ИИ: {w.hints_count}
+                  {t.assignments.hintsCount(w.hints_count)}
                 </span>
-                <span>Оценка: {w.score ?? '—'}</span>
+                <span>{t.assignments.gradeValue(w.score === null ? '—' : String(w.score))}</span>
               </span>
             </Link>
           </li>
@@ -95,12 +98,12 @@ function WorksTable({ assignmentId }: { assignmentId: number }) {
         <table className="w-full min-w-[640px] text-[13px]">
           <thead>
             <tr className="border-b bg-sidebar text-left text-muted-foreground">
-              <th className="px-4 py-2 font-medium">Студент</th>
-              <th className="px-4 py-2 font-medium">Этап</th>
-              <th className="px-4 py-2 font-medium">Статус</th>
-              <th className="px-4 py-2 text-right font-medium">Версий</th>
-              <th className="px-4 py-2 text-right font-medium">Подсказок ИИ</th>
-              <th className="px-4 py-2 text-right font-medium">Оценка</th>
+              <th className="px-4 py-2 font-medium">{t.assignments.col.student}</th>
+              <th className="px-4 py-2 font-medium">{t.assignments.col.stage}</th>
+              <th className="px-4 py-2 font-medium">{t.assignments.col.status}</th>
+              <th className="px-4 py-2 text-right font-medium">{t.assignments.col.versions}</th>
+              <th className="px-4 py-2 text-right font-medium">{t.assignments.col.hints}</th>
+              <th className="px-4 py-2 text-right font-medium">{t.assignments.col.grade}</th>
             </tr>
           </thead>
           <tbody>
@@ -111,7 +114,7 @@ function WorksTable({ assignmentId }: { assignmentId: number }) {
                     {w.student.name}
                   </Link>
                 </td>
-                <td className="px-4 py-2.5">{STAGE_LABEL[w.current_stage]}</td>
+                <td className="px-4 py-2.5">{t.labels.stage[w.current_stage]}</td>
                 <td className="px-4 py-2.5">
                   <StatusDot status={w.status} />
                 </td>

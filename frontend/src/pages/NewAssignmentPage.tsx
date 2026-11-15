@@ -6,6 +6,7 @@ import { useCreateAssignment } from '@/api/queries'
 import { useUser } from '@/auth/context'
 import { ErrorState, PageBody, PageHeader, PageTitle } from '@/components/izden/PageHeader'
 import { Button } from '@/components/ui/button'
+import { useT } from '@/i18n/context'
 import { cn } from '@/lib/utils'
 
 const TITLE_MAX = 300
@@ -14,24 +15,26 @@ const TITLE_MAX = 300
 export function NewAssignmentPage() {
   const user = useUser()
   const navigate = useNavigate()
+  const t = useT()
   const create = useCreateAssignment()
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [deadline, setDeadline] = useState('')
   const [showErrors, setShowErrors] = useState(false)
 
+  const crumbs = [{ label: t.nav.assignments, to: '/' }, { label: t.newAssignment.title }]
   const titleError = !title.trim()
-    ? 'Введите название задания.'
+    ? t.newAssignment.nameRequired
     : title.trim().length > TITLE_MAX
-      ? `Название длиннее ${TITLE_MAX} символов.`
+      ? t.newAssignment.nameTooLong(TITLE_MAX)
       : null
 
   if (user.role !== 'teacher') {
     return (
       <>
-        <PageHeader crumbs={[{ label: 'Задания', to: '/' }, { label: 'Новое задание' }]} />
+        <PageHeader crumbs={crumbs} />
         <PageBody>
-          <ErrorState message="Создавать задания может только преподаватель." />
+          <ErrorState message={t.newAssignment.teachersOnly} />
         </PageBody>
       </>
     )
@@ -49,7 +52,7 @@ export function NewAssignmentPage() {
       },
       {
         onSuccess: (a) => {
-          toast.success('Задание создано')
+          toast.success(t.newAssignment.created)
           navigate(`/assignments/${a.id}`)
         },
         onError: (err) => toast.error(errorMessage(err)),
@@ -59,7 +62,7 @@ export function NewAssignmentPage() {
 
   return (
     <>
-      <PageHeader crumbs={[{ label: 'Задания', to: '/' }, { label: 'Новое задание' }]} />
+      <PageHeader crumbs={crumbs} />
       <PageBody>
         <form
           noValidate
@@ -70,25 +73,23 @@ export function NewAssignmentPage() {
           }}
         >
           <div className="flex flex-col gap-1">
-            <PageTitle>Новое задание</PageTitle>
-            <p className="text-[13px] text-muted-foreground">
-              Этапы у всех заданий одинаковые: тема → план → черновик → финал.
-            </p>
+            <PageTitle>{t.newAssignment.title}</PageTitle>
+            <p className="text-[13px] text-muted-foreground">{t.newAssignment.subtitle}</p>
           </div>
 
-          <Field id="a-title" label="Название" error={showErrors ? titleError : null}>
+          <Field id="a-title" label={t.newAssignment.name} error={showErrors ? titleError : null}>
             <input
               id="a-title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Например: эссе о роли ИИ в учёбе"
+              placeholder={t.newAssignment.namePlaceholder}
               aria-invalid={showErrors && titleError ? true : undefined}
               aria-describedby={showErrors && titleError ? 'a-title-error' : undefined}
               className={cn(inputClass, 'h-10', showErrors && titleError && 'border-destructive')}
             />
           </Field>
 
-          <Field id="a-description" label="Описание" hint="Что сдать, объём, требования к источникам.">
+          <Field id="a-description" label={t.newAssignment.description} hint={t.newAssignment.descriptionHint}>
             <textarea
               id="a-description"
               rows={5}
@@ -98,7 +99,7 @@ export function NewAssignmentPage() {
             />
           </Field>
 
-          <Field id="a-deadline" label="Дедлайн" hint="Необязательно. Сдачу не блокирует, студент просто видит дату.">
+          <Field id="a-deadline" label={t.newAssignment.deadline} hint={t.newAssignment.deadlineHint}>
             <input
               id="a-deadline"
               type="datetime-local"
@@ -110,10 +111,10 @@ export function NewAssignmentPage() {
 
           <div className="flex flex-col gap-2 border-t pt-4 sm:flex-row">
             <Button type="submit" disabled={create.isPending} className="h-10 lg:h-[34px]">
-              {create.isPending ? 'Создаём…' : 'Создать задание'}
+              {create.isPending ? t.newAssignment.creating : t.newAssignment.create}
             </Button>
             <Button type="button" variant="outline" onClick={() => navigate('/')} className="h-10 lg:h-[34px]">
-              Отмена
+              {t.common.cancel}
             </Button>
           </div>
         </form>

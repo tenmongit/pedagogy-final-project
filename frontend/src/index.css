@@ -45,6 +45,7 @@
   --color-sidebar-ring: var(--sidebar-ring);
 
   --color-ai: var(--ai);
+  --color-ai-solid: var(--ai-solid);
   --color-ai-soft: var(--ai-soft);
   --color-ai-border: var(--ai-border);
   --color-ai-line: var(--ai-line);
@@ -59,6 +60,16 @@
   --color-danger-ink: var(--danger-ink);
   --color-demo: var(--demo);
   --color-demo-ink: var(--demo-ink);
+  --color-avatar: var(--avatar);
+  --color-stage-done: var(--stage-done);
+  --color-stage-todo: var(--stage-todo);
+  --color-dash: var(--dash);
+  --color-fg-subtle: var(--fg-subtle);
+  --color-fg-soft: var(--fg-soft);
+  --color-success-border: var(--success-border);
+  --color-success-ink: var(--success-ink);
+  --color-teacher-chip: var(--teacher-chip);
+  --color-disabled: var(--disabled);
 
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
@@ -99,6 +110,8 @@
   --sidebar-ring: #2457e6;
 
   --ai: #7c3aed;
+  /* Заливка кнопок ИИ с белым текстом: в тёмной теме --ai светлее, а заливка остаётся контрастной. */
+  --ai-solid: #7c3aed;
   --ai-soft: #faf8ff;
   --ai-border: #ddd6fe;
   --ai-line: #ede9fe;
@@ -113,6 +126,16 @@
   --danger-ink: #b91c1c;
   --demo: #f5f5f5;
   --demo-ink: #525252;
+  --avatar: #e8eefc;
+  --stage-done: #8f8f8f;
+  --stage-todo: #a3a3a3;
+  --dash: #c7c7c7;
+  --fg-subtle: #4b5563;
+  --fg-soft: #2b2b2b;
+  --success-border: #bbf7d0;
+  --success-ink: #14532d;
+  --teacher-chip: #eef3fe;
+  --disabled: #e5e5e5;
 }
 
 @layer base {

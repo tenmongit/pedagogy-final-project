@@ -4,8 +4,8 @@ import { PageTitle } from '@/components/izden/PageHeader'
 import { AiDot, StageIcon, StatusDot } from '@/components/izden/marks'
 import { DeclarationSummary, Properties } from '@/components/izden/work'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useI18n, useT } from '@/i18n/context'
 import { hintsAfterLast, hintsForVersion, newestFirst } from '@/lib/hints'
-import { STAGE_LABEL, formatDateTime, plural } from '@/lib/labels'
 import { stageState } from '@/lib/stages'
 import { DefensePanel } from './teacher/DefensePanel'
 import { GradePanel } from './teacher/GradePanel'
@@ -17,6 +17,7 @@ import { WorkCounters } from './WorkCounters'
  * Слева версии по этапам, справа свойства, вопросы для защиты и оценка.
  */
 export function TeacherWorkView({ work }: { work: WorkDetail }) {
+  const t = useT()
   const versionsTotal = work.stages.reduce((n, s) => n + s.submissions.length, 0)
   const stageIndex = STAGES.indexOf(work.current_stage)
 
@@ -33,13 +34,13 @@ export function TeacherWorkView({ work }: { work: WorkDetail }) {
             <div className="overflow-x-auto border-b">
               <TabsList variant="line" className="h-10 gap-4 px-0">
                 <TabsTrigger value="timeline" className="flex-none px-0 text-[13px]">
-                  Таймлайн
+                  {t.teacher.tabTimeline}
                 </TabsTrigger>
                 <TabsTrigger value="final" className="flex-none px-0 text-[13px]">
-                  Финальный текст
+                  {t.teacher.tabFinal}
                 </TabsTrigger>
                 <TabsTrigger value="log" className="flex-none px-0 text-[13px]">
-                  Лог ИИ · {work.hints.length}
+                  {t.teacher.tabLog(work.hints.length)}
                 </TabsTrigger>
               </TabsList>
             </div>
@@ -58,22 +59,25 @@ export function TeacherWorkView({ work }: { work: WorkDetail }) {
       </div>
 
       <aside
-        aria-label="Свойства, вопросы для защиты и оценка"
+        aria-label={t.teacher.asideLabel}
         className="flex flex-col gap-6 border-t px-4 py-6 sm:px-8 lg:border-t-0 lg:border-l lg:px-5 lg:py-5"
       >
         <Properties
           rows={[
-            ['Статус', <StatusDot key="s" status={work.status} />],
-            ['Этап', `${STAGE_LABEL[work.current_stage]} · ${stageIndex + 1} из 4`],
-            ['Версий', versionsTotal],
+            [t.work.prop.status, <StatusDot key="s" status={work.status} />],
+            [t.work.prop.stage, t.work.stageOf(t.labels.stage[work.current_stage], stageIndex + 1)],
+            [t.work.prop.versions, versionsTotal],
             [
-              'Подсказок ИИ',
+              t.work.prop.hints,
               <span key="h" className="inline-flex items-center gap-1.5">
                 {work.hints.length > 0 && <AiDot />}
                 {work.hints.length}
               </span>,
             ],
-            ['Оценка', work.grade ? `${work.grade.score} / 100` : <span key="g" className="text-muted-foreground">Нет</span>],
+            [
+              t.work.prop.grade,
+              work.grade ? `${work.grade.score} / 100` : <span key="g" className="text-muted-foreground">{t.work.prop.noGrade}</span>,
+            ],
           ]}
         />
         <DefensePanel work={work} />
@@ -85,6 +89,7 @@ export function TeacherWorkView({ work }: { work: WorkDetail }) {
 
 /** Этапы сверху вниз от текущего к первому; в каждом версии от новой к старой. */
 function Timeline({ work }: { work: WorkDetail }) {
+  const t = useT()
   const stages = [...work.stages]
     .reverse()
     .filter((s) => s.submissions.length > 0 || s.stage === work.current_stage)
@@ -98,16 +103,16 @@ function Timeline({ work }: { work: WorkDetail }) {
           <section key={stage} aria-labelledby={`stage-${stage}`} className="flex flex-col gap-2.5">
             <h2 id={`stage-${stage}`} className="flex items-center gap-2 text-[13px] font-semibold">
               <StageIcon state={stageState(stage, work.current_stage)} />
-              {STAGE_LABEL[stage]}
+              {t.labels.stage[stage]}
               <span className="font-normal text-muted-foreground">
-                {submissions.length > 0 ? plural(submissions.length, 'версия', 'версии', 'версий') : 'версий пока нет'}
+                {submissions.length > 0 ? t.work.versions(submissions.length) : t.teacher.noVersionsYet}
               </span>
             </h2>
 
             {afterLast.length > 0 && (
               <HintList
                 hints={newestFirst(afterLast)}
-                title={submissions.length > 0 ? 'Подсказки после последней версии' : 'Подсказки на этапе'}
+                title={submissions.length > 0 ? t.teacher.hintsAfterLast : t.teacher.hintsOnStage}
               />
             )}
 
@@ -128,15 +133,20 @@ function Timeline({ work }: { work: WorkDetail }) {
 }
 
 function FinalText({ work }: { work: WorkDetail }) {
+  const { t, formatDateTime } = useI18n()
   const finals = work.stages.find((s) => s.stage === 'final')!.submissions
   const last = finals.at(-1)
   if (!last) {
-    return <p className="rounded-lg border border-dashed px-4 py-8 text-center text-[13px] text-muted-foreground">Финал ещё не сдан.</p>
+    return (
+      <p className="rounded-lg border border-dashed px-4 py-8 text-center text-[13px] text-muted-foreground">
+        {t.teacher.finalNotSubmitted}
+      </p>
+    )
   }
   return (
     <article className="flex flex-col gap-4">
       <p className="text-[13px] text-muted-foreground">
-        Версия {last.version} · {formatDateTime(last.created_at)}
+        {t.work.version(last.version)} · {formatDateTime(last.created_at)}
       </p>
       <div className="whitespace-pre-wrap text-base leading-[1.75]">{last.text}</div>
       <div className="border-t pt-4">
@@ -150,8 +160,11 @@ function FinalText({ work }: { work: WorkDetail }) {
 }
 
 function HintLog({ work }: { work: WorkDetail }) {
+  const { t, formatDateTime } = useI18n()
   if (work.hints.length === 0) {
-    return <p className="rounded-lg border border-dashed px-4 py-8 text-center text-[13px] text-muted-foreground">Студент не обращался к ИИ.</p>
+    return (
+      <p className="rounded-lg border border-dashed px-4 py-8 text-center text-[13px] text-muted-foreground">{t.teacher.noHints}</p>
+    )
   }
   return (
     <ol className="flex flex-col">
@@ -159,10 +172,10 @@ function HintLog({ work }: { work: WorkDetail }) {
         <li key={h.id} className="flex flex-col gap-1.5 border-b py-3 text-[13px]">
           <span className="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
             <AiDot />
-            {STAGE_LABEL[h.stage]} · {formatDateTime(h.created_at)}
+            {t.labels.stage[h.stage]} · {formatDateTime(h.created_at)}
           </span>
           <span className="font-medium">{h.student_question}</span>
-          <p className="whitespace-pre-wrap rounded-md border border-ai-line bg-ai-soft px-3 py-2 text-[#2B2B2B]">{h.hint}</p>
+          <p className="whitespace-pre-wrap rounded-md border border-ai-line bg-ai-soft px-3 py-2 text-fg-soft">{h.hint}</p>
         </li>
       ))}
     </ol>
