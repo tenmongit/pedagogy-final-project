@@ -1,0 +1,27 @@
+# Сервер: фронт и API на одном адресе с HTTPS. Запуск описан в deploy/README.md
+services:
+  api:
+    build: ./backend
+    env_file: ./backend/.env
+    volumes:
+      - izden-data:/data
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:?укажите SITE_ADDRESS, например 1-2-3-4.sslip.io}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./frontend/dist:/srv/frontend:ro
+      - caddy-data:/data
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  izden-data:
+  caddy-data:
