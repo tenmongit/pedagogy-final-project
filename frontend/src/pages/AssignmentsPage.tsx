@@ -1,6 +1,6 @@
-import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { api, errorMessage, type Assignment } from '@/api'
+import { errorMessage, type Assignment } from '@/api'
+import { useAssignments } from '@/api/queries'
 import { useUser } from '@/auth/context'
 import { ErrorState, LoadingRows, PageBody, PageHeader, PageTitle } from '@/components/izden/PageHeader'
 import { StartOrOpenWork } from '@/components/izden/StartOrOpenWork'
@@ -9,7 +9,7 @@ import { formatDate } from '@/lib/labels'
 
 export function AssignmentsPage() {
   const user = useUser()
-  const assignments = useQuery({ queryKey: ['assignments'], queryFn: api.listAssignments })
+  const assignments = useAssignments()
 
   return (
     <>

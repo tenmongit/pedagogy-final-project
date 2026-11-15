@@ -5,7 +5,7 @@ import { AssignmentPage } from '@/pages/AssignmentPage'
 import { AssignmentsPage } from '@/pages/AssignmentsPage'
 import { LoginPage } from '@/pages/LoginPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
-import { WorkPage } from '@/pages/WorkPage'
+import { WorkPage } from '@/pages/work/WorkPage'
 
 export default function App() {
   return (

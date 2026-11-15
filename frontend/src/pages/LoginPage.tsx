@@ -1,7 +1,8 @@
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import { ChevronRight } from 'lucide-react'
 import { Navigate, useNavigate } from 'react-router-dom'
-import { api, errorMessage, type User } from '@/api'
+import { errorMessage, type User } from '@/api'
+import { useDemoUsers } from '@/api/queries'
 import { useAuth } from '@/auth/context'
 import { ErrorState, LoadingRows } from '@/components/izden/PageHeader'
 import { Avatar, Logo } from '@/components/izden/marks'
@@ -13,7 +14,7 @@ export function LoginPage() {
 
   // После входа всегда на список заданий: возврат на прошлый адрес мог бы привести
   // другого демо-пользователя на чужую работу (403).
-  const users = useQuery({ queryKey: ['demoUsers'], queryFn: api.listDemoUsers })
+  const users = useDemoUsers()
   const signIn = useMutation({
     mutationFn: (u: User) => login(u.id),
     onSuccess: () => navigate('/', { replace: true }),

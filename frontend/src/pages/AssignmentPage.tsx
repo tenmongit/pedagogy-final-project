@@ -1,6 +1,6 @@
-import { useQuery } from '@tanstack/react-query'
 import { Link, useParams } from 'react-router-dom'
-import { api, errorMessage, type Assignment } from '@/api'
+import { errorMessage, type Assignment } from '@/api'
+import { useAssignment, useAssignments, useWorks } from '@/api/queries'
 import { useUser } from '@/auth/context'
 import { ErrorState, LoadingRows, PageBody, PageHeader, PageTitle } from '@/components/izden/PageHeader'
 import { StartOrOpenWork } from '@/components/izden/StartOrOpenWork'
@@ -11,8 +11,8 @@ export function AssignmentPage() {
   const id = Number(useParams().assignmentId)
   const user = useUser()
   // У студента my_work_id приходит только в списке заданий, поэтому берём задание оттуда.
-  const list = useQuery({ queryKey: ['assignments'], queryFn: api.listAssignments, enabled: user.role === 'student' })
-  const single = useQuery({ queryKey: ['assignment', id], queryFn: () => api.getAssignment(id), enabled: user.role === 'teacher' })
+  const list = useAssignments(user.role === 'student')
+  const single = useAssignment(id, user.role === 'teacher')
   const query = user.role === 'student' ? list : single
   const assignment = user.role === 'student' ? list.data?.find((a) => a.id === id) : single.data
 
@@ -52,7 +52,7 @@ function AssignmentHead({ assignment: a }: { assignment: Assignment }) {
 
 /** Список работ для преподавателя: GET /api/assignments/{id}/works → WorkSummary[]. */
 function WorksTable({ assignmentId }: { assignmentId: number }) {
-  const works = useQuery({ queryKey: ['works', assignmentId], queryFn: () => api.listWorks(assignmentId) })
+  const works = useWorks(assignmentId)
 
   if (works.isPending) return <LoadingRows />
   if (works.isError) return <ErrorState message={errorMessage(works.error)} onRetry={() => works.refetch()} />

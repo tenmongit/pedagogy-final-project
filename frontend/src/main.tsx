@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { ApiError } from '@/api'
 import { AuthProvider } from '@/auth/AuthProvider'
+import { ErrorBoundary } from '@/components/izden/ErrorBoundary'
 import { Toaster } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import App from './App'
@@ -25,7 +26,10 @@ createRoot(document.getElementById('root')!).render(
       <BrowserRouter>
         <AuthProvider>
           <TooltipProvider>
-            <App />
+            {/* Последний рубеж: экран входа и всё, что вне AppLayout. */}
+            <ErrorBoundary>
+              <App />
+            </ErrorBoundary>
             <Toaster position="bottom-right" />
           </TooltipProvider>
         </AuthProvider>

@@ -1,13 +1,15 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import { FileText, LayoutList, LogOut } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { NavLink, Outlet } from 'react-router-dom'
-import { api, USE_MOCKS } from '@/api'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { USE_MOCKS } from '@/api'
 import { resetMockDb } from '@/api/mock'
+import { useAssignments } from '@/api/queries'
 import { useAuth, useUser } from '@/auth/context'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { ROLE_LABEL } from '@/lib/labels'
 import { cn } from '@/lib/utils'
+import { ErrorBoundary } from './ErrorBoundary'
 import { Avatar, DemoBadge, Logo } from './marks'
 import { NavContext } from './nav-context'
 
@@ -19,6 +21,7 @@ import { NavContext } from './nav-context'
 export function AppLayout() {
   const [navOpen, setNavOpen] = useState(false)
   const nav = useMemo(() => ({ openNav: () => setNavOpen(true) }), [])
+  const { pathname } = useLocation()
 
   return (
     <NavContext.Provider value={nav}>
@@ -35,7 +38,10 @@ export function AppLayout() {
         </Sheet>
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <Outlet />
+          {/* key: при переходе на другой экран ошибка прошлого экрана сбрасывается, меню остаётся. */}
+          <ErrorBoundary key={pathname}>
+            <Outlet />
+          </ErrorBoundary>
         </div>
       </div>
     </NavContext.Provider>
@@ -53,7 +59,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const user = useUser()
   const { logout } = useAuth()
   const queryClient = useQueryClient()
-  const assignments = useQuery({ queryKey: ['assignments'], queryFn: api.listAssignments })
+  const assignments = useAssignments()
   const myWorks = (assignments.data ?? []).filter((a) => a.my_work_id != null)
 
   return (
