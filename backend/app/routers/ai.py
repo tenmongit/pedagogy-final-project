@@ -35,10 +35,14 @@ def request_hint(
             .where(AIHintLog.work_id == work.id, AIHintLog.stage == work.current_stage)
         )
         if used >= HINTS_PER_STAGE:
+            advice = (
+                "Сдайте финальную версию."
+                if work.current_stage == "final"
+                else "Сдайте версию и переходите к следующему этапу."
+            )
             raise HTTPException(
                 409,
-                f"На этом этапе подсказки закончились ({HINTS_PER_STAGE} из {HINTS_PER_STAGE}). "
-                "Сдайте версию и переходите к следующему этапу.",
+                f"На этом этапе подсказки закончились ({HINTS_PER_STAGE} из {HINTS_PER_STAGE}). {advice}",
             )
         hint = service.generate_hint(
             service.HintContext(work.current_stage, body.question, body.current_text)
