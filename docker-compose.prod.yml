@@ -8,15 +8,17 @@ services:
     restart: unless-stopped
 
   caddy:
-    image: caddy:2
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile
+      args:
+        VITE_AI_DEMO: ${VITE_AI_DEMO:-true}
     environment:
       SITE_ADDRESS: ${SITE_ADDRESS:?укажите SITE_ADDRESS, например 1-2-3-4.sslip.io}
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
-      - ./frontend/dist:/srv/frontend:ro
       - caddy-data:/data
     depends_on:
       - api
