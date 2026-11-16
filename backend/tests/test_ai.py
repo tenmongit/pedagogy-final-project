@@ -99,3 +99,42 @@ def test_request_and_shared_quota(monkeypatch, tmp_path):
     with pytest.raises(provider.AIUnavailable, match="лимит"):
         provider.complete("system", "data")
     assert len(calls) == 2
+
+
+def test_claude_provider(monkeypatch, tmp_path):
+    from types import SimpleNamespace
+
+    monkeypatch.setattr(config, "AI_PROVIDER", "anthropic")
+    monkeypatch.setattr(config, "AI_API_KEY", "test-key")
+    monkeypatch.setattr(config, "AI_MODEL", "claude-opus-5-5")
+    monkeypatch.setattr(config, "AI_MAX_TOKENS", 4000)
+    monkeypatch.setattr(config, "AI_DAILY_LIMIT", 3)
+    monkeypatch.setattr(config, "AI_QUOTA_DB", str(tmp_path / "quota.db"))
+    answers = [
+        ("end_turn", "Подсказка"),
+        ("end_turn", '```json\n{"questions": []}\n```'),
+        ("refusal", ""),
+    ]
+    calls = []
+
+    def create(**kwargs):
+        calls.append(kwargs)
+        stop_reason, text = answers.pop(0)
+        content = [SimpleNamespace(type="thinking"), SimpleNamespace(type="text", text=text)]
+        return SimpleNamespace(stop_reason=stop_reason, content=content)
+
+    fake = SimpleNamespace(beta=SimpleNamespace(messages=SimpleNamespace(create=create)))
+    monkeypatch.setattr(provider, "_claude_client", lambda: fake)
+
+    assert provider.complete("system", "data") == "Подсказка"
+    assert calls[0]["model"] == "claude-opus-5-5"
+    assert calls[0]["max_tokens"] == 4000
+    assert calls[0]["system"] == "system"
+    assert calls[0]["messages"] == [{"role": "user", "content": "data"}]
+    assert calls[0]["fallbacks"] == "default"
+    assert provider.complete("system", "data", json_output=True) == '{"questions": []}'
+    with pytest.raises(provider.AIUnavailable, match="временно недоступен"):
+        provider.complete("system", "data")
+    with pytest.raises(provider.AIUnavailable, match="лимит"):
+        provider.complete("system", "data")
+    assert len(calls) == 3

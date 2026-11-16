@@ -75,6 +75,21 @@ Chat Completions с `max_completion_tokens` и JSON mode. Для локальн�
 `uvicorn app.main:app --env-file .env`. Без настроенной модели ИИ-маршруты возвращают
 `502 AI_UNAVAILABLE`.
 
+Чтобы работать через Claude, в `.env`:
+
+```
+AI_PROVIDER=anthropic
+AI_API_KEY=sk-ant-...
+AI_MODEL=claude-opus-5-5
+AI_MAX_TOKENS=4000
+AI_EFFORT=low
+```
+
+`AI_BASE_URL` в этом режиме не используется. У Claude `AI_MAX_TOKENS` включает размышления
+модели, поэтому 800 мало: ответ обрежется и вернётся 502. Отказ модели, обрыв по лимиту
+токенов, таймаут и ошибки API тоже дают 502 и идут в суточный лимит. Прогон примеров:
+`python scripts/check_ai.py`.
+
 `AI_DAILY_LIMIT` ограничивает попытки вызова подсказок и защиты суммарно за сутки UTC.
 Счётчик сохраняется в отдельном файле SQLite рядом с базой бэкенда. При необходимости
 путь задаётся через `AI_QUOTA_DB`. На этап доступно 10 успешных подсказок на студента.

@@ -1,4 +1,4 @@
-"""Серверный клиент Chat Completions и общий суточный лимит вызовов."""
+"""Серверный клиент модели (Chat Completions или Claude) и общий суточный лимит вызовов."""
 
 import asyncio
 import logging
@@ -7,6 +7,7 @@ from contextlib import closing
 from datetime import datetime, timezone
 from pathlib import Path
 
+import anthropic
 import httpx
 from sqlalchemy.engine import make_url
 
@@ -65,6 +66,45 @@ async def _post_completion(payload: dict) -> str:
         return content.strip()
 
 
+# Модели, которые принимают серверный фолбэк при отказе по правилам безопасности.
+_CLAUDE_FALLBACK_MODELS = {"claude-opus-5-5", "claude-opus-5", "claude-sonnet-5-5", "claude-fable-5-2", "claude-fable-5-1"}
+_claude: anthropic.Anthropic | None = None
+
+
+def _claude_client() -> anthropic.Anthropic:
+    global _claude
+    if _claude is None:
+        # Без ретраев, чтобы весь вызов укладывался в 30 секунд.
+        _claude = anthropic.Anthropic(api_key=config.AI_API_KEY, timeout=TIMEOUT_SECONDS, max_retries=0)
+    return _claude
+
+
+def _strip_code_fence(text: str) -> str:
+    if text.startswith("```") and text.endswith("```"):
+        text = text.split("\n", 1)[1] if "\n" in text else ""
+        text = text.rsplit("```", 1)[0]
+    return text.strip()
+
+
+def _complete_claude(system: str, data: str, *, json_output: bool) -> str:
+    extra = {}
+    if config.AI_MODEL in _CLAUDE_FALLBACK_MODELS:
+        extra = {"betas": ["server-side-fallback-2026-07-01"], "fallbacks": "default"}
+    response = _claude_client().beta.messages.create(
+        model=config.AI_MODEL,
+        max_tokens=config.AI_MAX_TOKENS,
+        system=system,
+        messages=[{"role": "user", "content": data}],
+        output_config={"effort": config.AI_EFFORT},
+        **extra,
+    )
+    text = "".join(block.text for block in response.content if block.type == "text").strip()
+    if response.stop_reason != "end_turn" or not text:
+        # refusal, max_tokens и т. п. считаем неполным ответом, как finish_reason != stop.
+        raise ValueError(f"Incomplete or empty model output: {response.stop_reason}")
+    return _strip_code_fence(text) if json_output else text
+
+
 def complete(system: str, data: str, *, json_output: bool = False) -> str:
     if (
         not config.AI_API_KEY.strip()
@@ -72,6 +112,16 @@ def complete(system: str, data: str, *, json_output: bool = False) -> str:
         or config.AI_MAX_TOKENS < 1
         or config.AI_DAILY_LIMIT < 1
     ):
+        raise AIUnavailable("Сервис ИИ временно недоступен")
+
+    if config.AI_PROVIDER == "anthropic":
+        _reserve_call()
+        try:
+            return _complete_claude(system, data, json_output=json_output)
+        except anthropic.APIStatusError as exc:
+            logger.warning("Claude API returned HTTP %d", exc.status_code)
+        except (anthropic.APIError, ValueError) as exc:
+            logger.warning("Claude API request failed: %s", type(exc).__name__)
         raise AIUnavailable("Сервис ИИ временно недоступен")
 
     payload = {
