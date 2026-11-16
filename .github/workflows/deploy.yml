@@ -1,0 +1,62 @@
+name: Test and deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  backend-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements*.txt
+      - run: pip install -r requirements-dev.txt
+      - run: pytest -q
+
+  frontend-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run build
+
+  deploy:
+    # Только после мержа в main и только если тесты и сборка прошли.
+    if: github.event_name == 'push'
+    needs: [backend-tests, frontend-build]
+    runs-on: ubuntu-latest
+    env:
+      HOST: 63.188.188.81
+      # Открытый ключ сервера: защищает от подмены адреса. Обновить, если сервер пересоздан.
+      HOST_KEY: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIcJwYLrhce71rI6MJMkfVZGPz/UQtfB3okDFVfj/s9y
+    steps:
+      - name: Update the demo server
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy
+          chmod 600 ~/.ssh/deploy
+          echo "$HOST $HOST_KEY" > ~/.ssh/known_hosts
+          # Команда на сервере зашита в authorized_keys: этот ключ запускает только deploy/deploy.sh.
+          ssh -i ~/.ssh/deploy -o IdentitiesOnly=yes "ubuntu@$HOST"
