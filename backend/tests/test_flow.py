@@ -1,20 +1,27 @@
-import os
-import tempfile
-
-os.environ["DATABASE_URL"] = f"sqlite:///{tempfile.mkdtemp()}/test.db"
-
 from datetime import datetime
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
-from app.main import app
+from app import db, main
 
 
 @pytest.fixture(scope="module")
-def client():
-    with TestClient(app) as c:
-        yield c
+def client(tmp_path_factory):
+    db_path = tmp_path_factory.mktemp("flow") / "test.db"
+    engine = create_engine(f"sqlite:///{db_path.as_posix()}", connect_args={"check_same_thread": False})
+    session_factory = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
+    try:
+        with pytest.MonkeyPatch.context() as patch:
+            patch.setattr(db, "SessionLocal", session_factory)
+            patch.setattr(main, "SessionLocal", session_factory)
+            patch.setattr(main, "engine", engine)
+            with TestClient(main.app) as c:
+                yield c
+    finally:
+        engine.dispose()
 
 
 @pytest.fixture
