@@ -245,6 +245,8 @@ export const ru = {
     tabLog: (n: number) => `Лог ИИ · ${n}`,
     noVersionsYet: 'версий пока нет',
     hintsAfterLast: 'Подсказки после последней версии',
+    // Номер подсказки по порядку во всей работе: так же их нумерует ИИ в «why» вопросов для защиты.
+    hintNo: (n: number) => `№${n}`,
     hintsOnStage: 'Подсказки на этапе',
     finalNotSubmitted: 'Финал ещё не сдан.',
     noHints: 'Студент не обращался к ИИ.',

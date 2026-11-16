@@ -235,6 +235,7 @@ export const kk: Messages = {
     tabLog: (n) => `ЖИ журналы · ${n}`,
     noVersionsYet: 'әзірге нұсқа жоқ',
     hintsAfterLast: 'Соңғы нұсқадан кейінгі кеңестер',
+    hintNo: (n) => `№${n}`,
     hintsOnStage: 'Кезеңдегі кеңестер',
     finalNotSubmitted: 'Финал әлі тапсырылмаған.',
     noHints: 'Студент ЖИ кеңестерін қолданған жоқ.',

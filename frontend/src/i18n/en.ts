@@ -231,6 +231,7 @@ export const en: Messages = {
     tabLog: (n) => `AI log · ${n}`,
     noVersionsYet: 'no versions yet',
     hintsAfterLast: 'Hints after the last version',
+    hintNo: (n) => `#${n}`,
     hintsOnStage: 'Hints at this stage',
     finalNotSubmitted: 'The final has not been submitted yet.',
     noHints: 'The student has not used AI hints.',

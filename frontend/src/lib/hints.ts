@@ -23,3 +23,12 @@ export function hintsAfterLast(hints: AIHintLog[], stage: Stage, versions: Submi
 
 export const newestFirst = <T extends { created_at: string }>(items: T[]) =>
   [...items].sort((a, b) => time(b.created_at) - time(a.created_at))
+
+/**
+ * Номер подсказки по порядку во всей работе, с 1, в порядке id (как их отдаёт API).
+ * Бэкенд нумерует лог для ИИ так же, поэтому «подсказка №4» в `why` вопросов для защиты
+ * совпадает с «№4» в логе у преподавателя.
+ */
+export function hintNumbers(hints: AIHintLog[]): Map<number, number> {
+  return new Map([...hints].sort((a, b) => a.id - b.id).map((h, i) => [h.id, i + 1]))
+}
