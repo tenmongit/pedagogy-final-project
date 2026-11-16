@@ -58,7 +58,7 @@ export function AssignmentsPage() {
 }
 
 function AssignmentRow({ assignment: a, role }: { assignment: Assignment; role: 'student' | 'teacher' }) {
-  const { t, formatDate } = useI18n()
+  const { t, formatDateTime } = useI18n()
   return (
     <li className="flex flex-col gap-3 rounded-lg border px-4 py-3.5 sm:flex-row sm:items-center sm:gap-4">
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
@@ -66,7 +66,7 @@ function AssignmentRow({ assignment: a, role }: { assignment: Assignment; role: 
           {a.title}
         </Link>
         {a.description && <p className="text-[13px] text-muted-foreground">{a.description}</p>}
-        {a.deadline && <p className="text-xs text-muted-foreground">{t.assignments.deadline(formatDate(a.deadline))}</p>}
+        {a.deadline && <p className="text-xs text-muted-foreground">{t.assignments.deadline(formatDateTime(a.deadline))}</p>}
       </div>
       {role === 'student' ? (
         <StartOrOpenWork assignment={a} />

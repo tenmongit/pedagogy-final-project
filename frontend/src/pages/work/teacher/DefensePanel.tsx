@@ -3,10 +3,12 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import { AI_IS_DEMO, ApiError, errorMessage, type DefenseQuestion, type WorkDetail } from '@/api'
 import { useDefenseQuestions, useGenerateDefenseQuestions, useUpdateDefenseQuestions } from '@/api/queries'
+import { AiThinking } from '@/components/izden/AiThinking'
 import { AiMark, DemoBadge } from '@/components/izden/marks'
 import { LoadingRows } from '@/components/izden/PageHeader'
 import { Button } from '@/components/ui/button'
 import { useI18n } from '@/i18n/context'
+import { cn } from '@/lib/utils'
 
 const MIN = 3
 const MAX = 4
@@ -25,10 +27,18 @@ export function DefensePanel({ work }: { work: WorkDetail }) {
   const [draft, setDraft] = useState<DefenseQuestion[] | null>(null)
   const [confirmRegen, setConfirmRegen] = useState(false)
   const [showErrors, setShowErrors] = useState(false)
+  // Вопросы только что пришли от ИИ: проявляются на месте анимации ожидания.
+  const [fresh, setFresh] = useState(false)
 
   const generate = () => {
     setConfirmRegen(false)
-    gen.mutate(undefined, { onSuccess: () => toast.success(d.generated) })
+    setFresh(false)
+    gen.mutate(undefined, {
+      onSuccess: () => {
+        setFresh(true)
+        toast.success(d.generated)
+      },
+    })
   }
 
   const draftError =
@@ -78,17 +88,43 @@ export function DefensePanel({ work }: { work: WorkDetail }) {
       {hasFinal && dq.isPending && <LoadingRows rows={1} />}
       {hasFinal && dq.isError && <p className="text-[13px] text-danger-ink">{errorMessage(dq.error)}</p>}
 
-      {hasFinal && dq.isSuccess && !data && !draft && (
+      {gen.isPending && (
+        <AiThinking
+          label={d.generating}
+          phases={d.phases}
+          lines={[]}
+          className="border-t border-ai-line pt-3"
+        />
+      )}
+      {gen.isPending && (
+        <ol aria-hidden className="flex flex-col">
+          {[88, 74, 82].map((w, i) => (
+            <li key={i} className="flex gap-2.5 border-t border-ai-line py-3">
+              <span className="w-4 shrink-0 text-[13px] text-muted-foreground">{i + 1}</span>
+              <div className="flex flex-1 flex-col gap-2 pt-1">
+                <span className="ai-skeleton h-2.5 rounded-full" style={{ width: `${w}%`, animationDelay: `${i * 150}ms` }} />
+                <span className="ai-skeleton h-2.5 rounded-full" style={{ width: `${w - 30}%`, animationDelay: `${i * 150 + 80}ms` }} />
+              </div>
+            </li>
+          ))}
+        </ol>
+      )}
+
+      {hasFinal && dq.isSuccess && !data && !draft && !gen.isPending && (
         <Button onClick={generate} disabled={gen.isPending} className="h-10 bg-ai-solid text-white hover:bg-ai-solid/90 lg:h-8">
           {gen.isPending ? d.generating : d.generate}
         </Button>
       )}
 
-      {data && !draft && (
+      {data && !draft && !gen.isPending && (
         <>
           <ol className="flex flex-col">
             {data.questions.map((q, i) => (
-              <li key={i} className="flex gap-2.5 border-t border-ai-line py-2.5">
+              <li
+                key={i}
+                className={cn('flex gap-2.5 border-t border-ai-line py-2.5', fresh && 'ai-enter')}
+                style={fresh ? { animationDelay: `${i * 70}ms` } : undefined}
+              >
                 <span className="w-4 shrink-0 text-[13px] text-muted-foreground">{i + 1}</span>
                 <div className="flex flex-col gap-1 text-[13px]">
                   <p>{q.question}</p>

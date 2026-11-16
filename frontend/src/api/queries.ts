@@ -4,7 +4,7 @@
  */
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { api } from './index'
-import type { AssignmentInput, DefenseQuestion, GradeInput, HintInput, SubmissionInput } from './types'
+import type { AssignmentInput, DefenseQuestion, GradeInput, HintInput, SubmissionInput, WorkDetail } from './types'
 
 export const qk = {
   demoUsers: ['demoUsers'] as const,
@@ -83,7 +83,12 @@ export function useRequestHint(workId: number) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (input: HintInput) => api.requestHint(workId, input),
-    onSuccess: () => invalidateWork(qc, workId),
+    onSuccess: (hint) => {
+      // Сразу кладём подсказку в работу, чтобы она встала на место анимации ожидания без пустой паузы.
+      // Остальное (счётчики, списки) догружается в фоне, мутация на это не ждёт.
+      qc.setQueryData<WorkDetail>(qk.work(workId), (old) => (old ? { ...old, hints: [...old.hints, hint] } : old))
+      void invalidateWork(qc, workId)
+    },
   })
 }
 
