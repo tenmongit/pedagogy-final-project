@@ -1,4 +1,5 @@
 import { Check } from 'lucide-react'
+import { useId } from 'react'
 import type { AIDeclaration, AIPurpose, AITool } from '@/api'
 import { AiDot } from '@/components/izden/marks'
 import { useT } from '@/i18n/context'
@@ -30,10 +31,10 @@ export function DeclarationForm({ value, onChange, autoIzden, hintsSince, errors
       <Row label={d.usedAi}>
         <fieldset className="inline-flex w-fit self-start rounded-[7px] bg-secondary p-0.5">
           <legend className="sr-only">{d.usedAiLegend}</legend>
-          <Segment checked={!value.used_ai} onSelect={() => onChange({ ...value, used_ai: false })}>
+          <Segment value="no" checked={!value.used_ai} onSelect={() => onChange({ ...value, used_ai: false })}>
             {d.no}
           </Segment>
-          <Segment checked={value.used_ai} onSelect={() => onChange({ ...value, used_ai: true })}>
+          <Segment value="yes" checked={value.used_ai} onSelect={() => onChange({ ...value, used_ai: true })}>
             {d.yes}
           </Segment>
         </fieldset>
@@ -119,7 +120,8 @@ function Row(props: { label: string; children: React.ReactNode; error?: string; 
   )
 }
 
-function Segment(props: { checked: boolean; onSelect: () => void; children: React.ReactNode }) {
+function Segment(props: { value: string; checked: boolean; onSelect: () => void; children: React.ReactNode }) {
+  const id = useId()
   return (
     <label
       className={cn(
@@ -127,8 +129,17 @@ function Segment(props: { checked: boolean; onSelect: () => void; children: Reac
         props.checked ? 'bg-background font-medium text-foreground shadow-[0_0_0_1px_var(--input)]' : 'text-muted-foreground',
       )}
     >
-      <input type="radio" name="used_ai" className="sr-only" checked={props.checked} onChange={props.onSelect} />
-      {props.children}
+      {/* Явное value и связь через aria-labelledby: без них инструменты доступности видят radio "on" без подписи. */}
+      <input
+        type="radio"
+        name="used_ai"
+        value={props.value}
+        aria-labelledby={id}
+        className="sr-only"
+        checked={props.checked}
+        onChange={props.onSelect}
+      />
+      <span id={id}>{props.children}</span>
     </label>
   )
 }

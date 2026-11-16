@@ -8,6 +8,7 @@ import { AiDot } from '@/components/izden/marks'
 import { DeclarationSummary, FeedbackItem } from '@/components/izden/work'
 import { Button } from '@/components/ui/button'
 import { useI18n, useT } from '@/i18n/context'
+import { hintNumbers } from '@/lib/hints'
 import { cn } from '@/lib/utils'
 
 interface Props {
@@ -48,13 +49,16 @@ export function VersionCard({ work, submission: s, hints, isLatestCurrent }: Pro
             t.work.decl.notUsedShort
           )}
           {hints.length > 0 && ` · ${t.work.hintsShort(hints.length)}`}
+          {s.feedback.length > 0 && <span className="text-teacher-ink">· {t.work.feedbackCount(s.feedback.length)}</span>}
         </span>
       </summary>
 
       <div className="flex flex-col gap-3 border-t px-3.5 py-3.5">
         <VersionText text={s.text} />
         <DeclarationSummary decl={s.ai_declaration} hintsCount={hints.length} />
-        {hints.length > 0 && <HintList hints={hints} title={t.teacher.hintsForVersion(s.version)} />}
+        {hints.length > 0 && (
+          <HintList hints={hints} title={t.teacher.hintsForVersion(s.version)} numbers={hintNumbers(work.hints)} />
+        )}
       </div>
 
       {s.feedback.length > 0 && (
@@ -86,8 +90,9 @@ function VersionText({ text }: { text: string }) {
   )
 }
 
-export function HintList({ hints, title }: { hints: AIHintLog[]; title: string }) {
-  const { formatDateTime } = useI18n()
+/** `numbers`: номер подсказки во всей работе (см. hintNumbers), чтобы сверять с «why» вопросов для защиты. */
+export function HintList({ hints, title, numbers }: { hints: AIHintLog[]; title: string; numbers: Map<number, number> }) {
+  const { t, formatDateTime } = useI18n()
   return (
     <details className="rounded-md border border-ai-line bg-ai-soft px-3">
       <summary className="flex min-h-9 cursor-pointer items-center gap-2 text-[13px] font-medium">
@@ -98,6 +103,7 @@ export function HintList({ hints, title }: { hints: AIHintLog[]; title: string }
         {hints.map((h) => (
           <li key={h.id} className="flex flex-col gap-1 border-t border-ai-line py-2.5 text-[13px]">
             <span className="font-medium">
+              <span className="font-normal text-muted-foreground tabular-nums">{t.teacher.hintNo(numbers.get(h.id) ?? 0)}</span>{' '}
               {h.student_question} <span className="font-normal text-muted-foreground">· {formatDateTime(h.created_at)}</span>
             </span>
             <p className="whitespace-pre-wrap text-fg-soft">{h.hint}</p>

@@ -33,11 +33,14 @@ export function StatusDot({ status, className }: { status: WorkStatus; className
   )
 }
 
-/** Метка «ИИ» / «AI» / «ЖИ» для заголовков блоков, связанных с ИИ. */
+/**
+ * Метка «ИИ» / «AI» / «ЖИ» для заголовков блоков, связанных с ИИ.
+ * Декоративная: скрыта от скринридера, иначе заголовок читается слитно («ИИПодсказки»).
+ */
 export function AiMark() {
   const t = useT()
   return (
-    <span className="inline-flex h-[18px] items-center rounded-[4px] border border-ai-border px-1.5 text-[11px] font-semibold text-ai">
+    <span aria-hidden className="inline-flex h-[18px] items-center rounded-[4px] border border-ai-border px-1.5 text-[11px] font-semibold text-ai">
       {t.common.ai}
     </span>
   )

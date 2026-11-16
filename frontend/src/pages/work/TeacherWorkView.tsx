@@ -5,7 +5,7 @@ import { AiDot, StageIcon, StatusDot } from '@/components/izden/marks'
 import { DeclarationSummary, Properties } from '@/components/izden/work'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useI18n, useT } from '@/i18n/context'
-import { hintsAfterLast, hintsForVersion, newestFirst } from '@/lib/hints'
+import { hintNumbers, hintsAfterLast, hintsForVersion, newestFirst } from '@/lib/hints'
 import { stageState } from '@/lib/stages'
 import { DefensePanel } from './teacher/DefensePanel'
 import { GradePanel } from './teacher/GradePanel'
@@ -93,6 +93,7 @@ function Timeline({ work }: { work: WorkDetail }) {
   const stages = [...work.stages]
     .reverse()
     .filter((s) => s.submissions.length > 0 || s.stage === work.current_stage)
+  const numbers = hintNumbers(work.hints)
 
   return (
     <div className="flex flex-col gap-7">
@@ -113,6 +114,7 @@ function Timeline({ work }: { work: WorkDetail }) {
               <HintList
                 hints={newestFirst(afterLast)}
                 title={submissions.length > 0 ? t.teacher.hintsAfterLast : t.teacher.hintsOnStage}
+                numbers={numbers}
               />
             )}
 
@@ -166,12 +168,14 @@ function HintLog({ work }: { work: WorkDetail }) {
       <p className="rounded-lg border border-dashed px-4 py-8 text-center text-[13px] text-muted-foreground">{t.teacher.noHints}</p>
     )
   }
+  const numbers = hintNumbers(work.hints)
   return (
     <ol className="flex flex-col">
       {newestFirst(work.hints).map((h) => (
         <li key={h.id} className="flex flex-col gap-1.5 border-b py-3 text-[13px]">
           <span className="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
             <AiDot />
+            <span className="font-medium text-foreground tabular-nums">{t.teacher.hintNo(numbers.get(h.id) ?? 0)}</span>
             {t.labels.stage[h.stage]} · {formatDateTime(h.created_at)}
           </span>
           <span className="font-medium">{h.student_question}</span>
