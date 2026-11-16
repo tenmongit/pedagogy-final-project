@@ -1,0 +1,55 @@
+[
+  {
+    "id": "H1",
+    "language": "ru",
+    "text": "Широко распростирает химия руки свои в дела человеческие, слушатели. Куда ни посмотрим, куда ни оглянемся, везде обращаются пред очами нашими успехи ея прилежания."
+  },
+  {
+    "id": "H2",
+    "language": "kk",
+    "text": "Жас бала анадан туғанда екі түрлі мінезбен туады: біреуі – ішсем, жесем, ұйықтасам деп тұрады. […] Біреуі – білсем екен демеклік."
+  },
+  {
+    "id": "H3",
+    "language": "en",
+    "text": "I believe that education, therefore, is a process of living and not a preparation for future living."
+  },
+  {
+    "id": "G1",
+    "language": "ru",
+    "text": "В учебной группе первый отзыв на черновик стоит давать до выставления баллов. В небольшом учебном эксперименте я сравнил бы две группы по 12 студентов. Обе получают один и тот же отзыв, но одна видит балл рядом с замечаниями. В финале считаю долю замечаний, которые студент учёл, и отдельно проверяю аргументы. Если группы изначально различаются по навыку письма, число исправлений само по себе не покажет эффект оценки.",
+    "declaration": "Попросил ИИ написать пробный абзац о сравнении двух групп.",
+    "purpose": "generated_text"
+  },
+  {
+    "id": "G2",
+    "language": "kk",
+    "text": "Мектеп кітапханасының жаңа кестесін бағалау үшін тек келушілер санын есептеу жеткіліксіз. Мен сәрсенбі мен жұмада сабақтан кейін кітапхананың бос орындарын және оқушылардың қанша уақыт қалғанын тіркер едім. Жұмадағы көрсеткіш төмен болса, себеп кесте емес, үйірмелер болуы мүмкін. Сондықтан бақылауды екі апта қатарынан жүргізіп, үйірме күндерін бөлек белгілеу керек."
+  },
+  {
+    "id": "G3",
+    "language": "en",
+    "text": "A closed-book quiz can reveal which concepts students can retrieve without cues. In the pilot, one section answers five questions after reading and another rereads its notes for the same five minutes. Both sections take a new quiz two days later. The questions use different examples so the score reflects transfer as well as recall. A limitation is that students may study at home between sessions.",
+    "draft": "Both sections answer the same five questions the day after the lesson.",
+    "declaration": "I used ChatGPT to write a sample paragraph about the limits of the pilot.",
+    "purpose": "generated_text"
+  },
+  {
+    "id": "M1",
+    "excerpt_from": "H3",
+    "language": "en",
+    "text": "To apply this idea in a media class, students could fact check a campus event announcement and give the organizer a short correction memo. I would look for two independent sources for each contested claim. Interviews with two people from the same organizing team may repeat the same account, so the memo should say which evidence is independent and which corroboration is still missing.",
+    "draft": "Students interview two organizers and submit a correction memo.",
+    "declaration": "ChatGPT suggested checking whether the two interviews were independent. I kept the idea and added a rule about contested claims.",
+    "purpose": "ideas"
+  },
+  {
+    "id": "M2",
+    "excerpt_from": "H2",
+    "language": "kk",
+    "text": "Осы айырмашылықты бастауыш сыныптағы тәжірибеде байқауға болады. Мұғалім бір топқа дайын жауап береді, екінші топқа суға салынған заттың неге қалқитынын бақылауды ұсынады. Содан кейін екі топтың өздігінен қойған сұрақтарын салыстырамын. Сұрақ саны қызығушылықты толық өлшемейді, сондықтан сұрақтың құбылыспен байланысын да қараймын.",
+    "draft": "Екі топтың сабақ соңында қойған сұрақтарының санын салыстырамын.",
+    "declaration": "Чаттан сабақтағы қызығушылықты қалай бақылауға болатыны туралы идея сұрадым. Сұрақ санымен бірге сұрақтың мазмұнын қарауды таңдадым.",
+    "purpose": "ideas"
+  }
+]

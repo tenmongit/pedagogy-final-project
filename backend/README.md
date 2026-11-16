@@ -22,7 +22,7 @@ pytest                            # тесты
 ## Запуск в Docker (сервер)
 
 ```bash
-cp backend/.env.example backend/.env   # заполнить JWT_SECRET, AI_API_KEY, CORS_ORIGINS
+cp backend/.env.example backend/.env   # заполнить JWT_SECRET и CORS_ORIGINS
 docker compose up -d --build
 ```
 
@@ -66,4 +66,23 @@ docker compose up -d --build
 
 ## ИИ-модуль
 
-Генерация живёт в `app/ai/service.py`: функции `generate_hint` и `generate_defense_questions`. Сейчас там заглушки. Права доступа, сбор контекста (текст работы и лог ИИ) и сохранение результата уже сделаны в `app/routers/ai.py`, менять их для подключения модели не нужно. Ключ берётся из `config.AI_API_KEY`.
+Для демо без поставщика ИИ оставьте на фронтенде `VITE_USE_MOCKS=true` и `VITE_AI_DEMO=true`.
+Интерфейс помечает заготовленные подсказки и вопросы «Демо / в разработке».
+
+Для вызовов модели настройте `AI_API_KEY` и `AI_MODEL` в серверном `.env`. Если API
+провайдера отличается от OpenAI, укажите `AI_BASE_URL` сервиса, который поддерживает
+Chat Completions с `max_completion_tokens` и JSON mode. Для локального сервера используйте
+`uvicorn app.main:app --env-file .env`. Без настроенной модели ИИ-маршруты возвращают
+`502 AI_UNAVAILABLE`.
+
+`AI_DAILY_LIMIT` ограничивает попытки вызова подсказок и защиты суммарно за сутки UTC.
+Счётчик сохраняется в отдельном файле SQLite рядом с базой бэкенда. При необходимости
+путь задаётся через `AI_QUOTA_DB`. На этап доступно 10 успешных подсказок на студента.
+
+Генерация живёт в `app/ai/service.py`. Текущий бэкенд вызывает её через существующие
+маршруты `/api/stages/{id}/hint` и `/api/assignments/{id}/defense-questions`.
+TODO(spec): после перехода основного API на `Work` подключить генерацию к маршрутам
+`/api/works/{id}/ai/*`, включая отдельный лог, снимок текста и сохранение `why` и
+`edited_by_teacher`. Настройка ключа сама по себе не переключает фронтенд на эти маршруты.
+
+Примеры и порядок проверки качества описаны в [docs/ai-tests.md](../docs/ai-tests.md).

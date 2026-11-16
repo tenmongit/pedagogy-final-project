@@ -17,13 +17,29 @@ def client():
         yield c
 
 
+@pytest.fixture
+def demo_ai(monkeypatch):
+    from app.ai import provider
+
+    def complete(system, data, *, json_output=False):
+        if not json_output:
+            return "Какой тезис требует доказательства?"
+        return """{"questions":[
+          {"question":"На какие данные вы опирались?", "why":"Этот вопрос касается финала."},
+          {"question":"Как менялся ваш план?", "why":"В работе есть предыдущие версии."},
+          {"question":"Что осталось от подсказки?", "why":"Подсказка есть в логе."}
+        ]}"""
+
+    monkeypatch.setattr(provider, "complete", complete)
+
+
 def login(client, email, password):
     r = client.post("/api/auth/login", json={"email": email, "password": password})
     assert r.status_code == 200, r.text
     return {"Authorization": f"Bearer {r.json()['access_token']}"}, r.json()["user"]
 
 
-def test_full_flow_and_access_rules(client):
+def test_full_flow_and_access_rules(client, demo_ai, monkeypatch):
     teacher, _ = login(client, "teacher@izden.kz", "teacher123")
     s1, s1_user = login(client, "student1@izden.kz", "student123")
     s2, _ = login(client, "student2@izden.kz", "student123")
@@ -81,6 +97,16 @@ def test_full_flow_and_access_rules(client):
     assert client.get(f"/api/stages/{topic}/submissions", headers=s2).json() == []
 
     # подсказка попадает в лог
+    from app.ai import provider
+
+    with monkeypatch.context() as patch:
+        def unavailable(*args, **kwargs):
+            raise provider.AIUnavailable("Сервис ИИ временно недоступен")
+
+        patch.setattr(provider, "complete", unavailable)
+        r = client.post(f"/api/stages/{topic}/hint", json={"question": "Сбой"}, headers=s1)
+        assert r.status_code == 502 and r.json()["error"]["code"] == "AI_UNAVAILABLE"
+
     r = client.post(f"/api/stages/{topic}/hint", json={"question": "С чего начать?"}, headers=s1)
     assert r.status_code == 200 and r.json()["hint"]
     assert client.post(f"/api/stages/{topic}/hint", json={"question": "?"}, headers=teacher).status_code == 403
@@ -91,16 +117,19 @@ def test_full_flow_and_access_rules(client):
     assert len(t["stages"][0]["submissions"]) == 2
     assert t["stages"][0]["submissions"][0]["feedback"][0]["text"] == "Сузьте тему"
     assert t["stages"][0]["hints"][0]["prompt"] == "С чего начать?"
+    assert len(t["stages"][0]["hints"]) == 1
+    for body in ({"question": "a" * 1001}, {"question": "?", "draft": "a" * 20_001}):
+        r = client.post(f"/api/stages/{topic}/hint", json=body, headers=s1)
+        assert r.status_code == 400 and r.json()["error"]["code"] == "VALIDATION_ERROR"
+    for _ in range(9):
+        assert client.post(f"/api/stages/{topic}/hint", json={"question": "?"}, headers=s1).status_code == 200
+    assert client.post(f"/api/stages/{topic}/hint", json={"question": "?"}, headers=s1).status_code == 409
 
     # вопросы защиты — только преподавателю
     q = f"/api/assignments/{aid}/defense-questions?student_id={sid}"
     assert client.post(q, headers=s1).status_code == 403
     assert client.get(q, headers=s1).status_code == 403
-    r = client.post(q, headers=teacher)
-    assert r.status_code == 200 and 3 <= len(r.json()) <= 4
-    assert len(client.post(q, headers=teacher).json()) == len(r.json())  # перегенерация заменяет
-    t = client.get(f"/api/assignments/{aid}/timeline?student_id={sid}", headers=teacher).json()
-    assert len(t["defense_questions"]) == len(r.json())
+    assert client.post(q, headers=teacher).status_code == 409
 
     # оценка: только преподаватель и только после финала
     g = f"/api/assignments/{aid}/grade?student_id={sid}"
@@ -111,6 +140,11 @@ def test_full_flow_and_access_rules(client):
             f"/api/stages/{stage}/submissions", json={"content": "текст", "used_ai": False}, headers=s1
         )
         assert r.status_code == 201, r.text
+    r = client.post(q, headers=teacher)
+    assert r.status_code == 200 and 3 <= len(r.json()) <= 4
+    assert len(client.post(q, headers=teacher).json()) == len(r.json())  # перегенерация заменяет
+    t = client.get(f"/api/assignments/{aid}/timeline?student_id={sid}", headers=teacher).json()
+    assert len(t["defense_questions"]) == len(r.json())
     assert client.put(g, json={"score": 101}, headers=teacher).status_code == 422
     assert client.put(g, json={"score": 90, "comment": "Хорошо"}, headers=teacher).status_code == 200
     assert client.put(g, json={"score": 85}, headers=teacher).json()["score"] == 85
@@ -122,6 +156,7 @@ def test_full_flow_and_access_rules(client):
         f"/api/stages/{final}/submissions", json={"content": "ещё", "used_ai": False}, headers=s1
     )
     assert r.status_code == 409
+    assert client.post(f"/api/stages/{final}/hint", json={"question": "?"}, headers=s1).status_code == 409
 
     # сводка для преподавателя
     rows = client.get(f"/api/assignments/{aid}/students", headers=teacher).json()

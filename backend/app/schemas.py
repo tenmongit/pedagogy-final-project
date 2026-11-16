@@ -154,8 +154,8 @@ class StudentProgressOut(BaseModel):
 
 
 class HintIn(BaseModel):
-    question: str = Field(min_length=1, max_length=2000)
-    draft: str = ""  # текущий текст студента, если он хочет подсказку по нему
+    question: str = Field(min_length=1, max_length=1000)
+    draft: str = Field(default="", max_length=20_000)
 
 
 class HintOut(BaseModel):

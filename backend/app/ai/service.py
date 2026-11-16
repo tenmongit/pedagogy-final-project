@@ -1,55 +1,92 @@
-"""Шов между основным API и ИИ-модулем (зона Мерей).
+"""Генерация подсказок и вопросов в формате раздела 7 CLAUDE.md."""
 
-Основное API вызывает только эти две функции. Хранение, права доступа и логирование
-уже сделаны в routers/ai.py — здесь нужна только генерация текста.
-Сейчас это заглушки, чтобы фронт мог интегрироваться до готовности промптов.
+import json
+from dataclasses import asdict, dataclass, field
+from typing import Annotated
 
-Ключ провайдера брать из config.AI_API_KEY (переменная окружения на сервере).
-"""
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints, ValidationError
 
-from dataclasses import dataclass, field
+from . import prompts, provider
 
 
-@dataclass
+@dataclass(frozen=True)
 class HintContext:
-    assignment_title: str
-    assignment_description: str
-    stage_kind: str  # topic | plan | draft | final
+    stage_kind: str
     question: str
     draft: str = ""
 
 
-@dataclass
-class UsageRecord:
+@dataclass(frozen=True)
+class Declaration:
     stage_kind: str
-    source: str  # self_report | platform_hint
-    tool: str = ""
-    purpose: str = ""
-    details: str = ""
-    prompt: str = ""
-    response: str = ""
+    version: int
+    used_ai: bool
+    tools: list[str]
+    purpose: list[str]
+    description: str
 
 
-@dataclass
+@dataclass(frozen=True)
+class HintRecord:
+    stage_kind: str
+    question: str
+    hint: str
+
+
+@dataclass(frozen=True)
 class DefenseContext:
-    assignment_title: str
-    assignment_description: str
-    final_text: str  # последняя версия самого позднего сданного этапа
-    ai_usage: list[UsageRecord] = field(default_factory=list)
+    final_text: str
+    previous_stages: dict[str, str] = field(default_factory=dict)
+    declarations: list[Declaration] = field(default_factory=list)
+    hints: list[HintRecord] = field(default_factory=list)
+
+
+NonBlank = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+
+
+class Question(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    question: NonBlank
+    why: NonBlank
+
+
+class DefenseOutput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    questions: list[Question] = Field(min_length=3, max_length=4)
 
 
 def generate_hint(ctx: HintContext) -> str:
-    """Подсказка на этапе: наводящие вопросы и направления, без готового текста работы."""
-    return (
-        f"[заглушка ИИ-модуля] Этап «{ctx.stage_kind}». Подумайте: какой главный вопрос "
-        "вы хотите раскрыть и какие источники его подтверждают?"
+    system = f"{prompts.HINT}\nЭтап {ctx.stage_kind}. {prompts.STAGE_GUIDANCE[ctx.stage_kind]}"
+    data = "\n\n".join(
+        [
+            prompts.data_tag("student_text", ctx.draft),
+            prompts.data_tag("student_question", ctx.question),
+        ]
     )
+    hint = provider.complete(system, data)
+    if len(hint.split()) > 150:
+        raise provider.AIUnavailable("Сервис ИИ вернул слишком длинную подсказку")
+    return hint
 
 
-def generate_defense_questions(ctx: DefenseContext) -> list[str]:
-    """3–4 вопроса для устной защиты по конкретной работе и логу ИИ. Без оценки работы."""
-    return [
-        "[заглушка ИИ-модуля] Объясните своими словами главный тезис вашей работы.",
-        "[заглушка ИИ-модуля] Почему вы выбрали именно такую структуру плана?",
-        "[заглушка ИИ-модуля] Какую часть вы изменили после использования ИИ и почему?",
-    ]
+def generate_defense_questions(ctx: DefenseContext) -> list[Question]:
+    texts = {"final": ctx.final_text}
+    for stage in ("topic", "plan", "draft"):
+        if stage in ctx.previous_stages:
+            texts[stage] = ctx.previous_stages[stage][:3000]
+    hints = [dict(asdict(hint), number=index) for index, hint in enumerate(ctx.hints, start=1)]
+    data = "\n\n".join(
+        prompts.data_tag(tag, json.dumps(value, ensure_ascii=False))
+        for tag, value in (
+            ("student_text", texts),
+            ("ai_declaration", [asdict(declaration) for declaration in ctx.declarations]),
+            ("hint_log", hints),
+        )
+    )
+    response = provider.complete(prompts.DEFENSE, data, json_output=True)
+    try:
+        return DefenseOutput.model_validate_json(response, strict=True).questions
+    except ValidationError:
+        raise provider.AIUnavailable("Сервис ИИ вернул некорректные вопросы") from None
