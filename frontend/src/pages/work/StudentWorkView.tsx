@@ -28,7 +28,7 @@ export function StudentWorkView({ work }: { work: WorkDetail }) {
 
 function StageWorkspace({ work }: { work: WorkDetail }) {
   const user = useUser()
-  const { t, formatDate, formatDateTime, formatNumber } = useI18n()
+  const { t, formatDateTime, formatNumber } = useI18n()
   const stage = work.current_stage
   const stageLabel = t.labels.stage[stage]
   const stageIndex = STAGES.indexOf(stage)
@@ -238,7 +238,7 @@ function StageWorkspace({ work }: { work: WorkDetail }) {
             [t.work.prop.status, <StatusDot key="s" status={work.status} />],
             [t.work.prop.stage, t.work.stageOf(stageLabel, stageIndex + 1)],
             [t.work.prop.versionsOnStage, versions.length],
-            [t.work.prop.deadline, work.assignment.deadline ? formatDate(work.assignment.deadline) : '—'],
+            [t.work.prop.deadline, work.assignment.deadline ? formatDateTime(work.assignment.deadline) : '—'],
             [t.work.prop.assignment, work.assignment.title],
           ]}
         />
