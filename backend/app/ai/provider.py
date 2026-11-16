@@ -67,16 +67,13 @@ async def _post_completion(payload: dict) -> str:
 
 
 # Модели, которые принимают серверный фолбэк при отказе по правилам безопасности.
-_CLAUDE_FALLBACK_MODELS = {"claude-opus-5-5", "claude-opus-5", "claude-sonnet-5-5", "claude-fable-5-2", "claude-fable-5-1"}
-_claude: anthropic.Anthropic | None = None
-
-
-def _claude_client() -> anthropic.Anthropic:
-    global _claude
-    if _claude is None:
-        # Без ретраев, чтобы весь вызов укладывался в 30 секунд.
-        _claude = anthropic.Anthropic(api_key=config.AI_API_KEY, timeout=TIMEOUT_SECONDS, max_retries=0)
-    return _claude
+_CLAUDE_FALLBACK_MODELS = {
+    "claude-opus-5-5",
+    "claude-opus-5",
+    "claude-sonnet-5-5",
+    "claude-fable-5-2",
+    "claude-fable-5-1",
+}
 
 
 def _strip_code_fence(text: str) -> str:
@@ -86,18 +83,23 @@ def _strip_code_fence(text: str) -> str:
     return text.strip()
 
 
-def _complete_claude(system: str, data: str, *, json_output: bool) -> str:
+async def _complete_claude(system: str, data: str, *, json_output: bool) -> str:
     extra = {}
     if config.AI_MODEL in _CLAUDE_FALLBACK_MODELS:
         extra = {"betas": ["server-side-fallback-2026-07-01"], "fallbacks": "default"}
-    response = _claude_client().beta.messages.create(
-        model=config.AI_MODEL,
-        max_tokens=config.AI_MAX_TOKENS,
-        system=system,
-        messages=[{"role": "user", "content": data}],
-        output_config={"effort": config.AI_EFFORT},
-        **extra,
-    )
+    async with asyncio.timeout(TIMEOUT_SECONDS), anthropic.AsyncAnthropic(
+        api_key=config.AI_API_KEY,
+        timeout=TIMEOUT_SECONDS,
+        max_retries=0,
+    ) as client:
+        response = await client.beta.messages.create(
+            model=config.AI_MODEL,
+            max_tokens=config.AI_MAX_TOKENS,
+            system=system,
+            messages=[{"role": "user", "content": data}],
+            output_config={"effort": config.AI_EFFORT},
+            **extra,
+        )
     text = "".join(block.text for block in response.content if block.type == "text").strip()
     if response.stop_reason != "end_turn" or not text:
         # refusal, max_tokens и т. п. считаем неполным ответом, как finish_reason != stop.
@@ -111,16 +113,19 @@ def complete(system: str, data: str, *, json_output: bool = False) -> str:
         or not config.AI_MODEL.strip()
         or config.AI_MAX_TOKENS < 1
         or config.AI_DAILY_LIMIT < 1
+        or config.AI_PROVIDER not in {"openai", "anthropic"}
     ):
         raise AIUnavailable("Сервис ИИ временно недоступен")
 
     if config.AI_PROVIDER == "anthropic":
         _reserve_call()
         try:
-            return _complete_claude(system, data, json_output=json_output)
+            return asyncio.run(_complete_claude(system, data, json_output=json_output))
         except anthropic.APIStatusError as exc:
             logger.warning("Claude API returned HTTP %d", exc.status_code)
-        except (anthropic.APIError, ValueError) as exc:
+        except anthropic.APIConnectionError as exc:
+            logger.warning("Claude API connection failed: %s", type(exc.__cause__).__name__)
+        except (anthropic.APIError, TimeoutError, ValueError) as exc:
             logger.warning("Claude API request failed: %s", type(exc).__name__)
         raise AIUnavailable("Сервис ИИ временно недоступен")
 

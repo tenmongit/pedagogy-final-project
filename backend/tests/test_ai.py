@@ -1,7 +1,9 @@
+import asyncio
 import json
 from html import unescape
 
 import httpx
+import httpx2
 import pytest
 
 from app import config
@@ -72,6 +74,7 @@ def test_long_hint_is_rejected(monkeypatch):
 
 
 def test_request_and_shared_quota(monkeypatch, tmp_path):
+    monkeypatch.setattr(config, "AI_PROVIDER", "openai")
     monkeypatch.setattr(config, "AI_API_KEY", "test-key")
     monkeypatch.setattr(config, "AI_BASE_URL", "https://provider.invalid/v1")
     monkeypatch.setattr(config, "AI_MODEL", "test-model")
@@ -101,15 +104,27 @@ def test_request_and_shared_quota(monkeypatch, tmp_path):
     assert len(calls) == 2
 
 
-def test_claude_provider(monkeypatch, tmp_path):
-    from types import SimpleNamespace
-
+@pytest.fixture
+def claude_transport(monkeypatch, tmp_path):
     monkeypatch.setattr(config, "AI_PROVIDER", "anthropic")
     monkeypatch.setattr(config, "AI_API_KEY", "test-key")
     monkeypatch.setattr(config, "AI_MODEL", "claude-opus-5-5")
     monkeypatch.setattr(config, "AI_MAX_TOKENS", 4000)
     monkeypatch.setattr(config, "AI_DAILY_LIMIT", 3)
     monkeypatch.setattr(config, "AI_QUOTA_DB", str(tmp_path / "quota.db"))
+    client = provider.anthropic.AsyncAnthropic
+
+    def install(respond):
+        def mock_client(**kwargs):
+            transport = httpx2.MockTransport(respond)
+            return client(http_client=httpx2.AsyncClient(transport=transport), **kwargs)
+
+        monkeypatch.setattr(provider.anthropic, "AsyncAnthropic", mock_client)
+
+    return install
+
+
+def test_claude_provider(claude_transport):
     answers = [
         ("end_turn", "Подсказка"),
         ("end_turn", '```json\n{"questions": []}\n```'),
@@ -117,14 +132,30 @@ def test_claude_provider(monkeypatch, tmp_path):
     ]
     calls = []
 
-    def create(**kwargs):
-        calls.append(kwargs)
+    def respond(request):
+        assert request.url.path == "/v1/messages"
+        assert request.headers["authorization"] == "Bearer test-key"
+        assert request.headers["anthropic-beta"] == "server-side-fallback-2026-07-01"
+        calls.append(json.loads(request.content))
         stop_reason, text = answers.pop(0)
-        content = [SimpleNamespace(type="thinking"), SimpleNamespace(type="text", text=text)]
-        return SimpleNamespace(stop_reason=stop_reason, content=content)
+        return httpx2.Response(
+            200,
+            json={
+                "id": "msg_test",
+                "type": "message",
+                "role": "assistant",
+                "model": "claude-opus-5-5",
+                "stop_reason": stop_reason,
+                "stop_sequence": None,
+                "usage": {"input_tokens": 10, "output_tokens": 20},
+                "content": [
+                    {"type": "thinking", "thinking": "", "signature": "test"},
+                    {"type": "text", "text": text},
+                ],
+            },
+        )
 
-    fake = SimpleNamespace(beta=SimpleNamespace(messages=SimpleNamespace(create=create)))
-    monkeypatch.setattr(provider, "_claude_client", lambda: fake)
+    claude_transport(respond)
 
     assert provider.complete("system", "data") == "Подсказка"
     assert calls[0]["model"] == "claude-opus-5-5"
@@ -138,3 +169,14 @@ def test_claude_provider(monkeypatch, tmp_path):
     with pytest.raises(provider.AIUnavailable, match="лимит"):
         provider.complete("system", "data")
     assert len(calls) == 3
+
+
+def test_claude_request_has_total_timeout(monkeypatch, claude_transport):
+    monkeypatch.setattr(provider, "TIMEOUT_SECONDS", 0.01)
+
+    async def slow_response(request):
+        await asyncio.Event().wait()
+
+    claude_transport(slow_response)
+    with pytest.raises(provider.AIUnavailable, match="временно недоступен"):
+        provider.complete("system", "data")
