@@ -42,11 +42,11 @@ curl https://$SITE_ADDRESS/api/health       # {"status":"ok"}
 
 ## Обновление
 
-```bash
-git pull && docker compose -f docker-compose.prod.yml up -d --build
-```
+Автоматически: при каждом мерже в `main` GitHub Actions (`.github/workflows/deploy.yml`) прогоняет тесты бэкенда и сборку фронта, затем запускает на сервере `deploy/deploy.sh`. Если тесты или сборка упали, сервер не трогается. Для этого в настройках репозитория нужен секрет `DEPLOY_SSH_KEY` с ключом деплоя; на сервере этот ключ может выполнить только `deploy/deploy.sh`.
 
-Переменные `SITE_ADDRESS` и `VITE_AI_DEMO` нужно задать заново в новой сессии SSH (или записать в файл `.env` в корне репозитория на сервере).
+Вручную на сервере: `~/izden/deploy/deploy.sh`.
+
+`SITE_ADDRESS` и `VITE_AI_DEMO` лежат на сервере в `~/izden/.env`, секреты бэкенда в `~/izden/backend/.env`. Деплой эти файлы не меняет.
 
 База сохраняется между обновлениями (том `izden-data`). Если поменялась модель данных или нужно вернуть демо к исходному состоянию:
 
