@@ -1,12 +1,13 @@
+"""Модель данных по разделу 5 CLAUDE.md."""
+
 from datetime import datetime
 
-from sqlalchemy import Boolean, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import JSON, Boolean, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .db import Base, UTCDateTime, utcnow
 
-STAGE_KINDS = ["topic", "plan", "draft", "final"]
-STAGE_TITLES = {"topic": "Тема", "plan": "План", "draft": "Черновик", "final": "Финал"}
+STAGES = ["topic", "plan", "draft", "final"]
 
 
 class User(Base):
@@ -14,8 +15,6 @@ class User(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(200))
-    email: Mapped[str] = mapped_column(String(200), unique=True, index=True)
-    password_hash: Mapped[str] = mapped_column(String(300))
     role: Mapped[str] = mapped_column(String(20))  # student | teacher
 
 
@@ -23,66 +22,58 @@ class Assignment(Base):
     __tablename__ = "assignments"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    teacher_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
     title: Mapped[str] = mapped_column(String(300))
     description: Mapped[str] = mapped_column(Text, default="")
-    teacher_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    deadline: Mapped[datetime | None] = mapped_column(UTCDateTime, nullable=True)  # информационно
     created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow)
 
-    stages: Mapped[list["Stage"]] = relationship(
-        order_by="Stage.position", cascade="all, delete-orphan", lazy="selectin"
-    )
 
+class Work(Base):
+    """Работа одного студента по одному заданию."""
 
-class Stage(Base):
-    __tablename__ = "stages"
-    __table_args__ = (UniqueConstraint("assignment_id", "kind"),)
+    __tablename__ = "works"
+    __table_args__ = (UniqueConstraint("assignment_id", "student_id"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     assignment_id: Mapped[int] = mapped_column(ForeignKey("assignments.id"), index=True)
-    kind: Mapped[str] = mapped_column(String(20))  # topic | plan | draft | final
-    position: Mapped[int] = mapped_column(Integer)
-    title: Mapped[str] = mapped_column(String(100))
-    due_at: Mapped[datetime | None] = mapped_column(UTCDateTime, nullable=True)
+    student_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    current_stage: Mapped[str] = mapped_column(String(20), default="topic")
+    status: Mapped[str] = mapped_column(String(20), default="in_progress")
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow)
+
+    assignment: Mapped[Assignment] = relationship(lazy="joined")
+    student: Mapped[User] = relationship(lazy="joined")
 
 
 class Submission(Base):
-    """Версия работы студента на этапе. Версии не редактируются, только добавляются."""
+    """Одна сданная версия на этапе. Версии не редактируются, только добавляются."""
 
     __tablename__ = "submissions"
-    __table_args__ = (UniqueConstraint("stage_id", "student_id", "version"),)
+    __table_args__ = (UniqueConstraint("work_id", "stage", "version"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    stage_id: Mapped[int] = mapped_column(ForeignKey("stages.id"), index=True)
-    student_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    work_id: Mapped[int] = mapped_column(ForeignKey("works.id"), index=True)
+    stage: Mapped[str] = mapped_column(String(20))
     version: Mapped[int] = mapped_column(Integer)
-    content: Mapped[str] = mapped_column(Text)
-    used_ai: Mapped[bool] = mapped_column(Boolean)
+    text: Mapped[str] = mapped_column(Text)
+    ai_declaration: Mapped[dict] = mapped_column(JSON)
     created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow)
 
-    ai_usage: Mapped[list["AIUsageLog"]] = relationship(order_by="AIUsageLog.id", lazy="selectin")
     feedback: Mapped[list["Feedback"]] = relationship(order_by="Feedback.id", lazy="selectin")
 
 
-class AIUsageLog(Base):
-    """Лог использования ИИ.
+class AIHintLog(Base):
+    """Каждое обращение к подсказке внутри Izden."""
 
-    source = self_report   — студент сам задекларировал при сдаче версии (submission_id задан);
-    source = platform_hint — подсказка, выданная ИИ-модулем платформы (prompt/response заполнены).
-    """
-
-    __tablename__ = "ai_usage_logs"
+    __tablename__ = "ai_hint_logs"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    student_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
-    assignment_id: Mapped[int] = mapped_column(ForeignKey("assignments.id"), index=True)
-    stage_id: Mapped[int] = mapped_column(ForeignKey("stages.id"))
-    submission_id: Mapped[int | None] = mapped_column(ForeignKey("submissions.id"), nullable=True)
-    source: Mapped[str] = mapped_column(String(20))
-    tool: Mapped[str] = mapped_column(String(100), default="")
-    purpose: Mapped[str] = mapped_column(String(300), default="")
-    details: Mapped[str] = mapped_column(Text, default="")
-    prompt: Mapped[str] = mapped_column(Text, default="")
-    response: Mapped[str] = mapped_column(Text, default="")
+    work_id: Mapped[int] = mapped_column(ForeignKey("works.id"), index=True)
+    stage: Mapped[str] = mapped_column(String(20))
+    student_question: Mapped[str] = mapped_column(Text)
+    student_text_snapshot: Mapped[str] = mapped_column(Text, default="")
+    hint: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow)
 
 
@@ -96,14 +87,15 @@ class Feedback(Base):
     created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow)
 
 
-class DefenseQuestion(Base):
+class DefenseQuestions(Base):
+    """Одна запись на работу, перегенерация её перезаписывает."""
+
     __tablename__ = "defense_questions"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    assignment_id: Mapped[int] = mapped_column(ForeignKey("assignments.id"), index=True)
-    student_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
-    position: Mapped[int] = mapped_column(Integer)
-    text: Mapped[str] = mapped_column(Text)
+    work_id: Mapped[int] = mapped_column(ForeignKey("works.id"), unique=True)
+    questions: Mapped[list] = mapped_column(JSON)  # [{"question": str, "why": str}]
+    edited_by_teacher: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow)
 
 
@@ -111,12 +103,10 @@ class Grade(Base):
     """Оценку ставит только преподаватель. ИИ сюда не пишет."""
 
     __tablename__ = "grades"
-    __table_args__ = (UniqueConstraint("assignment_id", "student_id"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    assignment_id: Mapped[int] = mapped_column(ForeignKey("assignments.id"), index=True)
-    student_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    work_id: Mapped[int] = mapped_column(ForeignKey("works.id"), unique=True)
     teacher_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     score: Mapped[int] = mapped_column(Integer)
     comment: Mapped[str] = mapped_column(Text, default="")
-    updated_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow, onupdate=utcnow)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow)

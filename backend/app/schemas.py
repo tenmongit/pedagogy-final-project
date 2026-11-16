@@ -1,94 +1,117 @@
-from datetime import datetime
-from typing import Literal
+"""Схемы запросов и ответов по разделам 5 и 6 CLAUDE.md."""
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from datetime import datetime, timezone
+from typing import Annotated, Literal
 
-StageKind = Literal["topic", "plan", "draft", "final"]
+from pydantic import AfterValidator, BaseModel, ConfigDict, Field, model_validator
+
+Stage = Literal["topic", "plan", "draft", "final"]
 Role = Literal["student", "teacher"]
+WorkStatus = Literal["in_progress", "awaiting_defense", "graded"]
+AITool = Literal["izden_hints", "chatgpt", "claude", "gemini", "other"]
+AIPurpose = Literal[
+    "ideas", "structure", "sources", "grammar", "translation", "generated_text", "other"
+]
+
+TEXT_MAX = 20_000
+QUESTION_MAX = 1_000
+
+
+def _not_blank(value: str) -> str:
+    if not value.strip():
+        raise ValueError("не может быть пустым")
+    return value
+
+
+def _as_utc(value: datetime) -> datetime:
+    # Время без часового пояса считаем UTC, чтобы в ответе всегда был суффикс Z.
+    return value.replace(tzinfo=timezone.utc) if value.tzinfo is None else value.astimezone(timezone.utc)
+
+
+NonBlank = Annotated[str, AfterValidator(_not_blank)]
+UTC = Annotated[datetime, AfterValidator(_as_utc)]
 
 
 class ORM(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class LoginIn(BaseModel):
-    email: str
-    password: str
-
-
 class UserOut(ORM):
     id: int
     name: str
-    email: str
     role: Role
 
 
-class TokenOut(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
+class LoginIn(BaseModel):
+    user_id: int
+
+
+class LoginOut(BaseModel):
+    token: str
     user: UserOut
 
 
-class StageOut(ORM):
-    id: int
-    assignment_id: int
-    kind: StageKind
-    position: int
-    title: str
-    due_at: datetime | None
-
-
 class AssignmentIn(BaseModel):
-    title: str = Field(min_length=1, max_length=300)
+    title: NonBlank = Field(max_length=300)
     description: str = ""
-    # Дедлайны по этапам, например {"topic": "2026-11-20T18:00:00+05:00"}. Все необязательны.
-    due_dates: dict[StageKind, datetime] = {}
+    deadline: UTC | None = None
 
 
 class AssignmentOut(ORM):
     id: int
+    teacher_id: int
     title: str
     description: str
-    teacher_id: int
-    created_at: datetime
-    stages: list[StageOut]
+    deadline: UTC | None
+    created_at: UTC
+    # Заполняется только студенту в GET /api/assignments.
+    my_work_id: int | None = None
 
 
-class AIUsageItemIn(BaseModel):
-    tool: str = Field(min_length=1, max_length=100)  # например "ChatGPT"
-    purpose: str = Field(min_length=1, max_length=300)  # зачем использовал
-    details: str = ""  # что именно взял из ответа / как переработал
-
-
-class AILogOut(ORM):
+class WorkOut(ORM):
     id: int
-    stage_id: int
-    submission_id: int | None
-    source: Literal["self_report", "platform_hint"]
-    tool: str
-    purpose: str
-    details: str
-    prompt: str
-    response: str
-    created_at: datetime
+    assignment_id: int
+    student_id: int
+    current_stage: Stage
+    status: WorkStatus
+    created_at: UTC
 
 
-class SubmissionIn(BaseModel):
-    content: str = Field(min_length=1)
+class WorkSummary(BaseModel):
+    id: int
+    student: UserOut
+    current_stage: Stage
+    status: WorkStatus
+    submissions_count: int
+    hints_count: int
+    score: int | None
+
+
+class AIDeclaration(BaseModel):
     used_ai: bool
-    ai_usage: list[AIUsageItemIn] = []
+    tools: list[AITool] = []
+    purpose: list[AIPurpose] = []
+    description: str = ""
 
     @model_validator(mode="after")
-    def declaration_is_consistent(self):
-        if self.used_ai and not self.ai_usage:
-            raise ValueError("used_ai=true требует хотя бы одной записи в ai_usage")
-        if not self.used_ai and self.ai_usage:
-            raise ValueError("ai_usage должен быть пустым при used_ai=false")
+    def consistent(self):
+        if self.used_ai:
+            if not self.tools:
+                raise ValueError("Укажите хотя бы один инструмент ИИ")
+            if not self.description.strip():
+                raise ValueError("Опишите своими словами, что вы взяли от ИИ")
+        elif self.tools or self.purpose:
+            raise ValueError("Если ИИ не использовался, инструменты и цели должны быть пустыми")
         return self
 
 
+class SubmissionIn(BaseModel):
+    text: NonBlank = Field(max_length=TEXT_MAX)
+    ai_declaration: AIDeclaration
+
+
 class FeedbackIn(BaseModel):
-    text: str = Field(min_length=1)
+    text: NonBlank
 
 
 class FeedbackOut(ORM):
@@ -96,19 +119,53 @@ class FeedbackOut(ORM):
     submission_id: int
     teacher_id: int
     text: str
-    created_at: datetime
+    created_at: UTC
 
 
 class SubmissionOut(ORM):
     id: int
-    stage_id: int
-    student_id: int
+    work_id: int
+    stage: Stage
     version: int
-    content: str
-    used_ai: bool
-    created_at: datetime
-    ai_usage: list[AILogOut]
+    text: str
+    ai_declaration: AIDeclaration
+    created_at: UTC
+
+
+class SubmissionWithFeedback(SubmissionOut):
     feedback: list[FeedbackOut]
+
+
+class HintIn(BaseModel):
+    question: NonBlank = Field(max_length=QUESTION_MAX)
+    current_text: str = Field(default="", max_length=TEXT_MAX)
+
+
+class AIHintLogOut(ORM):
+    id: int
+    work_id: int
+    stage: Stage
+    student_question: str
+    student_text_snapshot: str
+    hint: str
+    created_at: UTC
+
+
+class DefenseQuestion(BaseModel):
+    question: NonBlank
+    why: str = ""
+
+
+class DefenseQuestionsIn(BaseModel):
+    questions: list[DefenseQuestion] = Field(min_length=3, max_length=4)
+
+
+class DefenseQuestionsOut(ORM):
+    id: int
+    work_id: int
+    questions: list[DefenseQuestion]
+    edited_by_teacher: bool
+    created_at: UTC
 
 
 class GradeIn(BaseModel):
@@ -117,47 +174,25 @@ class GradeIn(BaseModel):
 
 
 class GradeOut(ORM):
-    assignment_id: int
-    student_id: int
+    id: int
+    work_id: int
     teacher_id: int
     score: int
     comment: str
-    updated_at: datetime
+    created_at: UTC
 
 
-class DefenseQuestionOut(ORM):
+class StageBlock(BaseModel):
+    stage: Stage
+    submissions: list[SubmissionWithFeedback]
+
+
+class WorkDetail(BaseModel):
     id: int
-    position: int
-    text: str
-    created_at: datetime
-
-
-class StageTimeline(StageOut):
-    submissions: list[SubmissionOut]
-    hints: list[AILogOut]  # подсказки платформы на этом этапе
-
-
-class TimelineOut(BaseModel):
     assignment: AssignmentOut
     student: UserOut
-    stages: list[StageTimeline]
+    current_stage: Stage
+    status: WorkStatus
+    stages: list[StageBlock]
+    hints: list[AIHintLogOut]
     grade: GradeOut | None
-    # Только для преподавателя; студенту всегда null.
-    defense_questions: list[DefenseQuestionOut] | None
-
-
-class StudentProgressOut(BaseModel):
-    student: UserOut
-    submitted_stages: list[StageKind]
-    last_submission_at: datetime | None
-    grade: GradeOut | None
-
-
-class HintIn(BaseModel):
-    question: str = Field(min_length=1, max_length=1000)
-    draft: str = Field(default="", max_length=20_000)
-
-
-class HintOut(BaseModel):
-    hint: str
-    log_id: int

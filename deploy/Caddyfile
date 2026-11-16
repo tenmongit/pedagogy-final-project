@@ -1,0 +1,15 @@
+{$SITE_ADDRESS} {
+	encode gzip
+
+	@api path /api/* /docs /openapi.json
+	handle @api {
+		reverse_proxy api:8000
+	}
+
+	# Собранный фронт (SPA): неизвестные пути отдают index.html
+	handle {
+		root * /srv/frontend
+		try_files {path} /index.html
+		file_server
+	}
+}

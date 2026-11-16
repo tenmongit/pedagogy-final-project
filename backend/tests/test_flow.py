@@ -1,4 +1,4 @@
-from datetime import datetime
+"""Сквозной сценарий и права доступа по разделам 4–6 и чек-листу QA (раздел 9) CLAUDE.md."""
 
 import pytest
 from fastapi.testclient import TestClient
@@ -6,6 +6,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from app import db, main
+
+NO_AI = {"used_ai": False, "tools": [], "purpose": [], "description": ""}
 
 
 @pytest.fixture(scope="module")
@@ -40,151 +42,248 @@ def demo_ai(monkeypatch):
     monkeypatch.setattr(provider, "complete", complete)
 
 
-def login(client, email, password):
-    r = client.post("/api/auth/login", json={"email": email, "password": password})
+def login(client, name):
+    users = client.get("/api/users/demo").json()
+    user = next(u for u in users if u["name"].startswith(name))
+    r = client.post("/api/auth/login", json={"user_id": user["id"]})
     assert r.status_code == 200, r.text
-    return {"Authorization": f"Bearer {r.json()['access_token']}"}, r.json()["user"]
+    assert r.json()["user"] == user
+    return {"Authorization": f"Bearer {r.json()['token']}"}, user
+
+
+def error(response, status, code):
+    assert response.status_code == status, response.text
+    assert response.json()["error"]["code"] == code
+    assert response.json()["error"]["message"]
+
+
+def test_seed_matches_section_8(client):
+    users = client.get("/api/users/demo").json()
+    assert [u["role"] for u in users] == ["teacher", "student", "student", "student"]
+    teacher, _ = login(client, "Преподаватель")
+    daniyar, _ = login(client, "Данияр")
+
+    [assignment] = client.get("/api/assignments", headers=teacher).json()
+    assert "my_work_id" not in assignment
+    assert assignment["deadline"] == "2026-11-25T13:00:00Z"
+
+    summaries = client.get(f"/api/assignments/{assignment['id']}/works", headers=teacher).json()
+    assert [(s["current_stage"], s["status"]) for s in summaries] == [
+        ("final", "awaiting_defense"),
+        ("draft", "in_progress"),
+    ]
+    assert summaries[0]["submissions_count"] == 6 and summaries[0]["hints_count"] == 7
+    assert summaries[0]["score"] is None
+
+    [mine] = client.get("/api/assignments", headers=daniyar).json()
+    work = client.get(f"/api/works/{mine['my_work_id']}", headers=daniyar).json()
+    assert [s["stage"] for s in work["stages"]] == ["topic", "plan", "draft", "final"]
+    assert [len(s["submissions"]) for s in work["stages"]] == [2, 1, 2, 1]
+    assert work["stages"][0]["submissions"][0]["feedback"][0]["text"].startswith("Слишком широко")
+    assert len(work["hints"]) == 7 and work["grade"] is None
 
 
 def test_full_flow_and_access_rules(client, demo_ai, monkeypatch):
-    teacher, _ = login(client, "teacher@izden.kz", "teacher123")
-    s1, s1_user = login(client, "student1@izden.kz", "student123")
-    s2, _ = login(client, "student2@izden.kz", "student123")
+    teacher, teacher_user = login(client, "Преподаватель")
+    s1, s1_user = login(client, "Алия")
+    s2, _ = login(client, "Айгерим")
 
-    assert client.get("/api/assignments").status_code == 401
-    assert client.post("/api/auth/login", json={"email": "x", "password": "y"}).status_code == 401
+    error(client.get("/api/assignments"), 401, "UNAUTHORIZED")
+    error(client.get("/api/me", headers={"Authorization": "Bearer nope"}), 401, "UNAUTHORIZED")
+    error(client.post("/api/auth/login", json={"user_id": 999}), 404, "NOT_FOUND")
+    assert client.get("/api/me", headers=s1).json() == s1_user
 
-    # студент не может создавать задания
-    assert client.post("/api/assignments", json={"title": "x"}, headers=s1).status_code == 403
-
-    r = client.post(
-        "/api/assignments",
-        json={"title": "Эссе", "due_dates": {"final": "2026-11-20T18:00:00+05:00"}},
-        headers=teacher,
-    )
+    # задание создаёт только преподаватель
+    body = {"title": "Эссе", "description": "Описание", "deadline": "2026-11-20T18:00:00+05:00"}
+    error(client.post("/api/assignments", json=body, headers=s1), 403, "FORBIDDEN")
+    error(client.post("/api/assignments", json={"title": " "}, headers=teacher), 400, "VALIDATION_ERROR")
+    r = client.post("/api/assignments", json=body, headers=teacher)
     assert r.status_code == 201, r.text
     a = r.json()
-    assert [s["kind"] for s in a["stages"]] == ["topic", "plan", "draft", "final"]
-    due = client.get(f"/api/assignments/{a['id']}", headers=s1).json()["stages"][3]["due_at"]
-    assert datetime.fromisoformat(due) == datetime.fromisoformat("2026-11-20T13:00:00+00:00")
-    topic, plan, draft, final = (s["id"] for s in a["stages"])
-    aid, sid = a["id"], s1_user["id"]
+    assert a["deadline"] == "2026-11-20T13:00:00Z" and a["teacher_id"] == teacher_user["id"]
+    aid = a["id"]
+    assert client.get(f"/api/assignments/{aid}", headers=s1).json()["title"] == "Эссе"
+    error(client.get("/api/assignments/999", headers=s1), 404, "NOT_FOUND")
+    error(client.get(f"/api/assignments/{aid}/works", headers=s1), 403, "FORBIDDEN")
+    assert client.get(f"/api/assignments/{aid}/works", headers=teacher).json() == []
 
-    # этапы идут по порядку
-    body = {"content": "План", "used_ai": False}
-    assert client.post(f"/api/stages/{plan}/submissions", json=body, headers=s1).status_code == 409
-
-    # декларация ИИ должна быть согласованной
-    bad = {"content": "Тема", "used_ai": True, "ai_usage": []}
-    assert client.post(f"/api/stages/{topic}/submissions", json=bad, headers=s1).status_code == 422
-
-    ok = {
-        "content": "Тема v1",
-        "used_ai": True,
-        "ai_usage": [{"tool": "ChatGPT", "purpose": "Сузить тему", "details": "взял 1 идею"}],
-    }
-    r = client.post(f"/api/stages/{topic}/submissions", json=ok, headers=s1)
+    # начать работу
+    mine = next(x for x in client.get("/api/assignments", headers=s1).json() if x["id"] == aid)
+    assert mine["my_work_id"] is None
+    error(client.post(f"/api/assignments/{aid}/works", headers=teacher), 403, "FORBIDDEN")
+    r = client.post(f"/api/assignments/{aid}/works", headers=s1)
     assert r.status_code == 201, r.text
-    sub = r.json()
-    assert sub["version"] == 1 and sub["ai_usage"][0]["source"] == "self_report"
-    r = client.post(
-        f"/api/stages/{topic}/submissions", json={"content": "Тема v2", "used_ai": False}, headers=s1
-    )
-    assert r.json()["version"] == 2
-
-    # преподаватель не сдаёт работы, студент не даёт фидбэк
-    assert client.post(f"/api/stages/{topic}/submissions", json=ok, headers=teacher).status_code == 403
-    fb = {"text": "Сузьте тему"}
-    assert client.post(f"/api/submissions/{sub['id']}/feedback", json=fb, headers=s1).status_code == 403
-    assert client.post(f"/api/submissions/{sub['id']}/feedback", json=fb, headers=teacher).status_code == 201
+    work = r.json()
+    wid = work["id"]
+    assert (work["current_stage"], work["status"]) == ("topic", "in_progress")
+    assert work["created_at"].endswith("Z")
+    error(client.post(f"/api/assignments/{aid}/works", headers=s1), 409, "CONFLICT")
+    mine = next(x for x in client.get("/api/assignments", headers=s1).json() if x["id"] == aid)
+    assert mine["my_work_id"] == wid
 
     # чужую работу студент не видит
-    assert client.get(f"/api/submissions/{sub['id']}", headers=s2).status_code == 403
-    assert client.get(f"/api/assignments/{aid}/timeline?student_id={sid}", headers=s2).status_code == 403
-    assert client.get(f"/api/stages/{topic}/submissions", headers=s2).json() == []
+    error(client.get(f"/api/works/{wid}", headers=s2), 403, "FORBIDDEN")
+    error(client.get(f"/api/works/{wid}/ai/log", headers=s2), 403, "FORBIDDEN")
+    error(client.post(f"/api/works/{wid}/submissions", json={"text": "x", "ai_declaration": NO_AI}, headers=s2), 403, "FORBIDDEN")
+    error(client.get("/api/works/999", headers=s1), 404, "NOT_FOUND")
 
-    # подсказка попадает в лог
+    # нельзя перейти без версии
+    error(client.post(f"/api/works/{wid}/advance", headers=s1), 409, "CONFLICT")
+
+    # валидация версии и декларации
+    sub = f"/api/works/{wid}/submissions"
+    used = {"used_ai": True, "tools": ["chatgpt"], "purpose": ["ideas"], "description": "Взял идею"}
+    for bad in (
+        {"text": "", "ai_declaration": NO_AI},
+        {"text": "a" * 20_001, "ai_declaration": NO_AI},
+        {"text": "Тема"},
+        {"text": "Тема", "ai_declaration": {**used, "description": "  "}},
+        {"text": "Тема", "ai_declaration": {**used, "tools": []}},
+        {"text": "Тема", "ai_declaration": {**used, "tools": ["copilot"]}},
+        {"text": "Тема", "ai_declaration": {**NO_AI, "tools": ["chatgpt"]}},
+        {"text": "Тема", "ai_declaration": {**NO_AI, "purpose": ["ideas"]}},
+    ):
+        error(client.post(sub, json=bad, headers=s1), 400, "VALIDATION_ERROR")
+    error(client.post(sub, json={"text": "Тема", "ai_declaration": NO_AI}, headers=teacher), 403, "FORBIDDEN")
+
+    r = client.post(sub, json={"text": "Тема v1", "ai_declaration": used}, headers=s1)
+    assert r.status_code == 201, r.text
+    first = r.json()
+    assert (first["stage"], first["version"], first["work_id"]) == ("topic", 1, wid)
+    assert first["ai_declaration"] == used
+    r = client.post(sub, json={"text": "a" * 20_000, "ai_declaration": NO_AI}, headers=s1)
+    assert r.json()["version"] == 2
+
+    # фидбэк даёт только преподаватель, студент его видит
+    fb = f"/api/submissions/{first['id']}/feedback"
+    error(client.post(fb, json={"text": "Сузьте тему"}, headers=s1), 403, "FORBIDDEN")
+    error(client.post(fb, json={"text": ""}, headers=teacher), 400, "VALIDATION_ERROR")
+    error(client.post("/api/submissions/999/feedback", json={"text": "x"}, headers=teacher), 404, "NOT_FOUND")
+    assert client.post(fb, json={"text": "Сузьте тему"}, headers=teacher).status_code == 201
+
+    # подсказка: сбой ИИ не попадает в лог и не считается в лимит
     from app.ai import provider
 
+    hint = f"/api/works/{wid}/ai/hint"
     with monkeypatch.context() as patch:
         def unavailable(*args, **kwargs):
             raise provider.AIUnavailable("Сервис ИИ временно недоступен")
 
         patch.setattr(provider, "complete", unavailable)
-        r = client.post(f"/api/stages/{topic}/hint", json={"question": "Сбой"}, headers=s1)
-        assert r.status_code == 502 and r.json()["error"]["code"] == "AI_UNAVAILABLE"
+        error(client.post(hint, json={"question": "Сбой", "current_text": ""}, headers=s1), 502, "AI_UNAVAILABLE")
+    assert client.get(f"/api/works/{wid}/ai/log", headers=s1).json() == []
 
-    r = client.post(f"/api/stages/{topic}/hint", json={"question": "С чего начать?"}, headers=s1)
-    assert r.status_code == 200 and r.json()["hint"]
-    assert client.post(f"/api/stages/{topic}/hint", json={"question": "?"}, headers=teacher).status_code == 403
-
-    # таймлайн студента: без вопросов защиты
-    t = client.get(f"/api/assignments/{aid}/timeline", headers=s1).json()
-    assert t["defense_questions"] is None
-    assert len(t["stages"][0]["submissions"]) == 2
-    assert t["stages"][0]["submissions"][0]["feedback"][0]["text"] == "Сузьте тему"
-    assert t["stages"][0]["hints"][0]["prompt"] == "С чего начать?"
-    assert len(t["stages"][0]["hints"]) == 1
-    for body in ({"question": "a" * 1001}, {"question": "?", "draft": "a" * 20_001}):
-        r = client.post(f"/api/stages/{topic}/hint", json=body, headers=s1)
-        assert r.status_code == 400 and r.json()["error"]["code"] == "VALIDATION_ERROR"
-    for _ in range(9):
-        assert client.post(f"/api/stages/{topic}/hint", json={"question": "?"}, headers=s1).status_code == 200
-    assert client.post(f"/api/stages/{topic}/hint", json={"question": "?"}, headers=s1).status_code == 409
-
-    # вопросы защиты — только преподавателю
-    q = f"/api/assignments/{aid}/defense-questions?student_id={sid}"
-    assert client.post(q, headers=s1).status_code == 403
-    assert client.get(q, headers=s1).status_code == 403
-    assert client.post(q, headers=teacher).status_code == 409
-
-    # оценка: только преподаватель и только после финала
-    g = f"/api/assignments/{aid}/grade?student_id={sid}"
-    assert client.put(g, json={"score": 90}, headers=s1).status_code == 403
-    assert client.put(g, json={"score": 90}, headers=teacher).status_code == 409
-    for stage in (plan, draft, final):
-        r = client.post(
-            f"/api/stages/{stage}/submissions", json={"content": "текст", "used_ai": False}, headers=s1
-        )
-        assert r.status_code == 201, r.text
-    r = client.post(q, headers=teacher)
-    assert r.status_code == 200 and 3 <= len(r.json()) <= 4
-    assert len(client.post(q, headers=teacher).json()) == len(r.json())  # перегенерация заменяет
-    t = client.get(f"/api/assignments/{aid}/timeline?student_id={sid}", headers=teacher).json()
-    assert len(t["defense_questions"]) == len(r.json())
-    assert client.put(g, json={"score": 101}, headers=teacher).status_code == 422
-    assert client.put(g, json={"score": 90, "comment": "Хорошо"}, headers=teacher).status_code == 200
-    assert client.put(g, json={"score": 85}, headers=teacher).json()["score"] == 85
-    assert client.get(f"/api/assignments/{aid}/grade", headers=s1).json()["score"] == 85
-    assert client.get(f"/api/assignments/{aid}/grade", headers=s2).json() is None
-
-    # после оценки сдача закрыта
-    r = client.post(
-        f"/api/stages/{final}/submissions", json={"content": "ещё", "used_ai": False}, headers=s1
+    r = client.post(hint, json={"question": "С чего начать?", "current_text": "Мой текст"}, headers=s1)
+    assert r.status_code == 200, r.text
+    log = r.json()
+    assert (log["stage"], log["student_question"], log["student_text_snapshot"]) == (
+        "topic", "С чего начать?", "Мой текст",
     )
-    assert r.status_code == 409
-    assert client.post(f"/api/stages/{final}/hint", json={"question": "?"}, headers=s1).status_code == 409
+    assert log["hint"] and log["work_id"] == wid
+    error(client.post(hint, json={"question": "?"}, headers=teacher), 403, "FORBIDDEN")
+    for bad in ({"question": "a" * 1001}, {"question": "  "}, {"question": "?", "current_text": "a" * 20_001}):
+        error(client.post(hint, json=bad, headers=s1), 400, "VALIDATION_ERROR")
+    for _ in range(9):
+        assert client.post(hint, json={"question": "?"}, headers=s1).status_code == 200
+    error(client.post(hint, json={"question": "?"}, headers=s1), 409, "CONFLICT")  # 11-я
+    assert len(client.get(f"/api/works/{wid}/ai/log", headers=teacher).json()) == 10
 
-    # сводка для преподавателя
-    rows = client.get(f"/api/assignments/{aid}/students", headers=teacher).json()
-    row = next(x for x in rows if x["student"]["id"] == sid)
-    assert row["submitted_stages"] == ["topic", "plan", "draft", "final"]
-    assert row["grade"]["score"] == 85
-    assert client.get(f"/api/assignments/{aid}/students", headers=s1).status_code == 403
+    # работа целиком
+    detail = client.get(f"/api/works/{wid}", headers=s1).json()
+    assert detail["assignment"]["id"] == aid and detail["student"] == s1_user
+    assert "my_work_id" not in detail["assignment"]
+    assert [len(s["submissions"]) for s in detail["stages"]] == [2, 0, 0, 0]
+    assert detail["stages"][0]["submissions"][0]["feedback"][0]["text"] == "Сузьте тему"
+    assert len(detail["hints"]) == 10 and detail["grade"] is None
+    assert client.get(f"/api/works/{wid}", headers=teacher).json() == detail
+
+    # вопросы защиты и оценка недоступны до финала
+    dq = f"/api/works/{wid}/ai/defense-questions"
+    grade = f"/api/works/{wid}/grade"
+    for method in (client.get, client.post):
+        error(method(dq, headers=s1), 403, "FORBIDDEN")
+    error(client.put(dq, json={"questions": []}, headers=s1), 403, "FORBIDDEN")
+    error(client.post(dq, headers=teacher), 409, "CONFLICT")
+    assert client.get(dq, headers=teacher).json() is None
+    error(client.put(grade, json={"score": 90, "comment": ""}, headers=s1), 403, "FORBIDDEN")
+    error(client.put(grade, json={"score": 90, "comment": ""}, headers=teacher), 409, "CONFLICT")
+
+    # этапы по порядку; на новом этапе лимит подсказок свой
+    for stage in ("plan", "draft", "final"):
+        r = client.post(f"/api/works/{wid}/advance", headers=s1)
+        assert r.status_code == 200 and r.json()["current_stage"] == stage
+        if stage == "plan":
+            assert client.post(hint, json={"question": "?"}, headers=s1).json()["stage"] == "plan"
+        r = client.post(sub, json={"text": f"Текст {stage}", "ai_declaration": NO_AI}, headers=s1)
+        assert (r.json()["stage"], r.json()["version"]) == (stage, 1)
+    error(client.post(f"/api/works/{wid}/advance", headers=s1), 409, "CONFLICT")  # уже финал
+    assert client.get(f"/api/works/{wid}", headers=s1).json()["status"] == "awaiting_defense"
+    assert client.post(sub, json={"text": "Финал v2", "ai_declaration": NO_AI}, headers=s1).json()["version"] == 2
+
+    # вопросы для защиты: генерация, правка, перегенерация
+    questions = [{"question": f"Вопрос {i}?", "why": "Факт"} for i in range(3)]
+    error(client.put(dq, json={"questions": questions}, headers=teacher), 404, "NOT_FOUND")
+    r = client.post(dq, headers=teacher)
+    assert r.status_code == 200, r.text
+    record = r.json()
+    assert len(record["questions"]) == 3 and record["questions"][0]["why"]
+    assert record["edited_by_teacher"] is False and record["work_id"] == wid
+    for bad in (questions[:2], questions + questions, [*questions[:2], {"question": " ", "why": ""}]):
+        error(client.put(dq, json={"questions": bad}, headers=teacher), 400, "VALIDATION_ERROR")
+    edited = client.put(dq, json={"questions": questions}, headers=teacher).json()
+    assert edited["edited_by_teacher"] is True and edited["id"] == record["id"]
+    assert client.get(dq, headers=teacher).json() == edited
+    again = client.post(dq, headers=teacher).json()
+    assert again["edited_by_teacher"] is False and again["id"] == record["id"]
+    assert again["questions"] == record["questions"]
+
+    # оценка
+    error(client.put(grade, json={"score": 101, "comment": ""}, headers=teacher), 400, "VALIDATION_ERROR")
+    r = client.put(grade, json={"score": 90, "comment": "Хорошо"}, headers=teacher)
+    assert r.status_code == 200 and r.json()["score"] == 90
+    assert client.put(grade, json={"score": 85, "comment": "Итог"}, headers=teacher).json()["id"] == r.json()["id"]
+    detail = client.get(f"/api/works/{wid}", headers=s1).json()
+    assert detail["status"] == "graded"
+    assert (detail["grade"]["score"], detail["grade"]["comment"]) == (85, "Итог")
+
+    # после оценки студент только смотрит, преподаватель продолжает работать
+    error(client.post(sub, json={"text": "ещё", "ai_declaration": NO_AI}, headers=s1), 409, "CONFLICT")
+    error(client.post(hint, json={"question": "?"}, headers=s1), 409, "CONFLICT")
+    error(client.post(f"/api/works/{wid}/advance", headers=s1), 409, "CONFLICT")
+    assert client.post(fb, json={"text": "После защиты"}, headers=teacher).status_code == 201
+    assert client.post(dq, headers=teacher).status_code == 200
+
+    summary = client.get(f"/api/assignments/{aid}/works", headers=teacher).json()
+    assert summary == [
+        {
+            "id": wid, "student": s1_user, "current_stage": "final", "status": "graded",
+            "submissions_count": 6, "hints_count": 11, "score": 85,
+        }
+    ]
 
 
 def test_teacher_sees_only_own_assignments(client):
-    from app.db import SessionLocal
     from app.models import User
-    from app.security import hash_password
 
-    with SessionLocal() as db:
-        db.add(User(name="T2", email="t2@izden.kz", password_hash=hash_password("pw"), role="teacher"))
-        db.commit()
-    t2, _ = login(client, "t2@izden.kz", "pw")
-    teacher, _ = login(client, "teacher@izden.kz", "teacher123")
-    aid = client.get("/api/assignments", headers=teacher).json()[0]["id"]
+    with db.SessionLocal() as session:
+        other = User(name="Другой преподаватель", role="teacher")
+        session.add(other)
+        session.commit()
+    other, _ = login(client, "Другой")
+    daniyar, _ = login(client, "Данияр")
+    mine = client.get("/api/assignments", headers=daniyar).json()[-1]
+    aid, wid = mine["id"], mine["my_work_id"]
+    submission = client.get(f"/api/works/{wid}", headers=daniyar).json()["stages"][0]["submissions"][0]
 
-    assert client.get("/api/assignments", headers=t2).json() == []
-    assert client.get(f"/api/assignments/{aid}", headers=t2).status_code == 403
-    assert client.get(f"/api/assignments/{aid}/students", headers=t2).status_code == 403
+    assert client.get("/api/assignments", headers=other).json() == []
+    for method, path, body in (
+        ("get", f"/api/assignments/{aid}", None),
+        ("get", f"/api/assignments/{aid}/works", None),
+        ("get", f"/api/works/{wid}", None),
+        ("get", f"/api/works/{wid}/ai/log", None),
+        ("get", f"/api/works/{wid}/ai/defense-questions", None),
+        ("post", f"/api/works/{wid}/ai/defense-questions", None),
+        ("post", f"/api/submissions/{submission['id']}/feedback", {"text": "x"}),
+        ("put", f"/api/works/{wid}/grade", {"score": 1, "comment": ""}),
+    ):
+        error(client.request(method, path, json=body, headers=other), 403, "FORBIDDEN")

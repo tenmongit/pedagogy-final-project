@@ -1,194 +1,95 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from ..db import get_db
-from ..models import (
-    STAGE_KINDS,
-    STAGE_TITLES,
-    AIUsageLog,
-    Assignment,
-    DefenseQuestion,
-    Grade,
-    Stage,
-    Submission,
-    User,
-)
-from ..schemas import (
-    AssignmentIn,
-    AssignmentOut,
-    GradeIn,
-    GradeOut,
-    StudentProgressOut,
-    TimelineOut,
-)
-from ..security import current_user, get_assignment, require_teacher, resolve_student
+from ..models import AIHintLog, Assignment, Grade, Submission, User, Work
+from ..schemas import AssignmentIn, AssignmentOut, WorkOut, WorkSummary
+from ..security import current_user, get_assignment, require_student, require_teacher
 
 router = APIRouter(prefix="/api/assignments", tags=["assignments"])
 
 
-@router.get("", response_model=list[AssignmentOut])
+@router.get("", response_model=list[AssignmentOut], response_model_exclude_unset=True)
 def list_assignments(user: User = Depends(current_user), db: Session = Depends(get_db)):
-    query = select(Assignment).order_by(Assignment.created_at.desc())
+    query = select(Assignment).order_by(Assignment.created_at.desc(), Assignment.id.desc())
     if user.role == "teacher":
-        query = query.where(Assignment.teacher_id == user.id)
-    return db.scalars(query).all()
+        return db.scalars(query.where(Assignment.teacher_id == user.id)).all()
+    my_works = dict(
+        db.execute(select(Work.assignment_id, Work.id).where(Work.student_id == user.id)).all()
+    )
+    result = []
+    for assignment in db.scalars(query):
+        item = AssignmentOut.model_validate(assignment)
+        item.my_work_id = my_works.get(assignment.id)
+        result.append(item)
+    return result
 
 
-@router.post("", response_model=AssignmentOut, status_code=201)
+@router.post("", response_model=AssignmentOut, response_model_exclude_unset=True, status_code=201)
 def create_assignment(
     body: AssignmentIn, user: User = Depends(require_teacher), db: Session = Depends(get_db)
 ):
-    """Создаёт задание сразу с четырьмя этапами: тема → план → черновик → финал."""
-    assignment = Assignment(title=body.title, description=body.description, teacher_id=user.id)
-    assignment.stages = [
-        Stage(kind=kind, position=i, title=STAGE_TITLES[kind], due_at=body.due_dates.get(kind))
-        for i, kind in enumerate(STAGE_KINDS)
-    ]
+    assignment = Assignment(teacher_id=user.id, **body.model_dump())
     db.add(assignment)
     db.commit()
+    db.refresh(assignment)
     return assignment
 
 
-@router.get("/{assignment_id}", response_model=AssignmentOut)
+@router.get("/{assignment_id}", response_model=AssignmentOut, response_model_exclude_unset=True)
 def read_assignment(
     assignment_id: int, user: User = Depends(current_user), db: Session = Depends(get_db)
 ):
     return get_assignment(db, assignment_id, user)
 
 
-@router.get("/{assignment_id}/timeline", response_model=TimelineOut)
-def timeline(
-    assignment_id: int,
-    student_id: int | None = None,
-    user: User = Depends(current_user),
-    db: Session = Depends(get_db),
-):
-    """Весь путь одного студента по заданию: этапы, версии, декларации ИИ, подсказки, фидбэк, оценка.
-
-    Студент получает свой таймлайн, преподаватель передаёт ?student_id=.
-    """
-    assignment = get_assignment(db, assignment_id, user)
-    student = resolve_student(db, user, student_id)
-    stage_ids = [s.id for s in assignment.stages]
-
-    submissions = db.scalars(
-        select(Submission)
-        .where(Submission.stage_id.in_(stage_ids), Submission.student_id == student.id)
-        .order_by(Submission.version)
-    ).all()
-    hints = db.scalars(
-        select(AIUsageLog)
-        .where(
-            AIUsageLog.assignment_id == assignment.id,
-            AIUsageLog.student_id == student.id,
-            AIUsageLog.source == "platform_hint",
-        )
-        .order_by(AIUsageLog.id)
-    ).all()
-
-    questions = None
-    if user.role == "teacher":
-        questions = db.scalars(
-            select(DefenseQuestion)
-            .where(
-                DefenseQuestion.assignment_id == assignment.id,
-                DefenseQuestion.student_id == student.id,
-            )
-            .order_by(DefenseQuestion.position)
-        ).all()
-
-    return {
-        "assignment": assignment,
-        "student": student,
-        "stages": [
-            {
-                "id": s.id,
-                "assignment_id": s.assignment_id,
-                "kind": s.kind,
-                "position": s.position,
-                "title": s.title,
-                "due_at": s.due_at,
-                "submissions": [x for x in submissions if x.stage_id == s.id],
-                "hints": [h for h in hints if h.stage_id == s.id],
-            }
-            for s in assignment.stages
-        ],
-        "grade": _grade(db, assignment.id, student.id),
-        "defense_questions": questions,
-    }
-
-
-@router.get("/{assignment_id}/students", response_model=list[StudentProgressOut])
-def students_progress(
+@router.get("/{assignment_id}/works", response_model=list[WorkSummary])
+def list_works(
     assignment_id: int, user: User = Depends(require_teacher), db: Session = Depends(get_db)
 ):
-    """Сводка для преподавателя: кто на каком этапе и кому уже выставлена оценка."""
+    """Только начатые работы: у кого есть Work."""
     assignment = get_assignment(db, assignment_id, user)
-    kinds = {s.id: s.kind for s in assignment.stages}
-    submissions = db.scalars(select(Submission).where(Submission.stage_id.in_(kinds))).all()
-    grades = {
-        g.student_id: g
-        for g in db.scalars(select(Grade).where(Grade.assignment_id == assignment.id))
-    }
-    result = []
-    for student in db.scalars(select(User).where(User.role == "student").order_by(User.name)):
-        own = [s for s in submissions if s.student_id == student.id]
-        done = {kinds[s.stage_id] for s in own}
-        result.append(
-            {
-                "student": student,
-                "submitted_stages": [k for k in STAGE_KINDS if k in done],
-                "last_submission_at": max((s.created_at for s in own), default=None),
-                "grade": grades.get(student.id),
-            }
+    works = db.scalars(
+        select(Work).where(Work.assignment_id == assignment.id).order_by(Work.id)
+    ).all()
+    ids = [w.id for w in works]
+
+    def counts(model):
+        return dict(
+            db.execute(
+                select(model.work_id, func.count()).where(model.work_id.in_(ids)).group_by(model.work_id)
+            ).all()
         )
-    return result
+
+    submissions, hints = counts(Submission), counts(AIHintLog)
+    scores = dict(db.execute(select(Grade.work_id, Grade.score).where(Grade.work_id.in_(ids))).all())
+    return [
+        WorkSummary(
+            id=w.id,
+            student=w.student,
+            current_stage=w.current_stage,
+            status=w.status,
+            submissions_count=submissions.get(w.id, 0),
+            hints_count=hints.get(w.id, 0),
+            score=scores.get(w.id),
+        )
+        for w in works
+    ]
 
 
-def _grade(db: Session, assignment_id: int, student_id: int) -> Grade | None:
-    return db.scalar(
-        select(Grade).where(Grade.assignment_id == assignment_id, Grade.student_id == student_id)
-    )
-
-
-@router.get("/{assignment_id}/grade", response_model=GradeOut | None)
-def read_grade(
-    assignment_id: int,
-    student_id: int | None = None,
-    user: User = Depends(current_user),
-    db: Session = Depends(get_db),
+@router.post("/{assignment_id}/works", response_model=WorkOut, status_code=201)
+def start_work(
+    assignment_id: int, user: User = Depends(require_student), db: Session = Depends(get_db)
 ):
     assignment = get_assignment(db, assignment_id, user)
-    student = resolve_student(db, user, student_id)
-    return _grade(db, assignment.id, student.id)
-
-
-@router.put("/{assignment_id}/grade", response_model=GradeOut)
-def set_grade(
-    assignment_id: int,
-    student_id: int,
-    body: GradeIn,
-    user: User = Depends(require_teacher),
-    db: Session = Depends(get_db),
-):
-    """Оценку ставит только преподаватель. После оценки сдача новых версий закрыта."""
-    assignment = get_assignment(db, assignment_id, user)
-    student = resolve_student(db, user, student_id)
-    final_stage = assignment.stages[-1]
-    has_final = db.scalar(
-        select(Submission.id).where(
-            Submission.stage_id == final_stage.id, Submission.student_id == student.id
-        )
-    )
-    if has_final is None:
-        raise HTTPException(409, "Нельзя оценить: студент ещё не сдал финальную версию")
-    grade = _grade(db, assignment.id, student.id)
-    if grade is None:
-        grade = Grade(assignment_id=assignment.id, student_id=student.id)
-        db.add(grade)
-    grade.teacher_id = user.id
-    grade.score = body.score
-    grade.comment = body.comment
-    db.commit()
-    return grade
+    work = Work(assignment_id=assignment.id, student_id=user.id)
+    db.add(work)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(409, "Работа по этому заданию уже начата")
+    db.refresh(work)
+    return work
