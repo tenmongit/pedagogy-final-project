@@ -59,7 +59,7 @@ def error(response, status, code):
 
 def test_seed_matches_section_8(client):
     users = client.get("/api/users/demo").json()
-    assert [u["role"] for u in users] == ["teacher", "student", "student", "student"]
+    assert [u["role"] for u in users] == ["teacher"] + ["student"] * 8
     teacher, _ = login(client, "Demo Teacher")
     daniyar, _ = login(client, "Daniyar")
 
@@ -68,12 +68,17 @@ def test_seed_matches_section_8(client):
     assert assignment["deadline"] == "2026-11-25T13:00:00Z"
 
     summaries = client.get(f"/api/assignments/{assignment['id']}/works", headers=teacher).json()
-    assert [(s["current_stage"], s["status"]) for s in summaries] == [
-        ("final", "awaiting_defense"),
-        ("draft", "in_progress"),
+    assert [(s["current_stage"], s["status"], s["score"]) for s in summaries] == [
+        ("final", "awaiting_defense", None),
+        ("draft", "in_progress", None),
+        ("final", "graded", 86),
+        ("final", "graded", 74),
+        ("final", "graded", 91),
+        ("draft", "in_progress", None),
+        ("plan", "in_progress", None),
+        ("topic", "in_progress", None),
     ]
     assert summaries[0]["submissions_count"] == 6 and summaries[0]["hints_count"] == 7
-    assert summaries[0]["score"] is None
 
     [mine] = client.get("/api/assignments", headers=daniyar).json()
     work = client.get(f"/api/works/{mine['my_work_id']}", headers=daniyar).json()
@@ -81,6 +86,12 @@ def test_seed_matches_section_8(client):
     assert [len(s["submissions"]) for s in work["stages"]] == [2, 1, 2, 1]
     assert work["stages"][0]["submissions"][0]["feedback"][0]["text"].startswith("Too broad")
     assert len(work["hints"]) == 7 and work["grade"] is None
+    # Вопросы защиты для Daniyar генерируются на демо, у оценённых работ они уже есть.
+    assert client.get(f"/api/works/{mine['my_work_id']}/ai/defense-questions", headers=teacher).json() is None
+    graded = summaries[2]["id"]
+    questions = client.get(f"/api/works/{graded}/ai/defense-questions", headers=teacher).json()
+    assert 3 <= len(questions["questions"]) <= 4 and not questions["edited_by_teacher"]
+    assert client.get(f"/api/works/{graded}", headers=teacher).json()["grade"]["score"] == 86
 
 
 def test_full_flow_and_access_rules(client, demo_ai, monkeypatch):
