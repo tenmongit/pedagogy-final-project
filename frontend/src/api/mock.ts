@@ -39,29 +39,30 @@ interface DB {
   grades: Grade[]
 }
 
-const STORAGE_KEY = 'izden.mockdb.v1'
+const STORAGE_KEY = 'izden.mockdb.v2'
 const MOCK_HINT_PREFIX = '[Демо: ИИ-модуль ещё не подключён, это заготовленный ответ]'
 
 // ---------------------------------------------------------------------------
-// Сид: 1 преподаватель, 3 студента, 1 задание. У Данияра работа на финале с историей
-// версий и подсказок (раздел 8), у Айгерим — на черновике, у Алии работы нет.
+// Сид: 1 преподаватель, 3 студента, 1 задание. У Daniyar работа на финале с историей
+// версий и подсказок (раздел 8), у Aigerim — на черновике, у Aliya работы нет.
+// Данные совпадают с backend/app/seed.py.
 // ---------------------------------------------------------------------------
 
 const none: AIDeclaration = { used_ai: false, tools: [], purpose: [], description: '' }
 
 function seed(): DB {
   const users: User[] = [
-    { id: 1, name: 'Преподаватель Демо', role: 'teacher' },
-    { id: 2, name: 'Айгерим Студент', role: 'student' },
-    { id: 3, name: 'Данияр Студент', role: 'student' },
-    { id: 4, name: 'Алия Студент', role: 'student' },
+    { id: 1, name: 'Demo Teacher', role: 'teacher' },
+    { id: 2, name: 'Aigerim Student', role: 'student' },
+    { id: 3, name: 'Daniyar Student', role: 'student' },
+    { id: 4, name: 'Aliya Student', role: 'student' },
   ]
   const assignments: DB['assignments'] = [
     {
       id: 1,
       teacher_id: 1,
-      title: 'Эссе «ИИ в высшем образовании»',
-      description: 'Аргументированное эссе на 800–1000 слов с опорой минимум на 3 источника.',
+      title: 'Essay: AI in higher education',
+      description: 'An argumentative essay of 800–1000 words drawing on at least 3 sources.',
       deadline: '2026-11-25T13:00:00Z',
       created_at: '2026-11-03T06:00:00Z',
     },
@@ -71,59 +72,37 @@ function seed(): DB {
     { id: 2, assignment_id: 1, student_id: 2, current_stage: 'draft', status: 'in_progress', created_at: '2026-11-06T10:00:00Z' },
   ]
 
-  const finalText =
-    'Запрет ИИ в вузах не решает проблему, а прячет её. Студенты всё равно пользуются ChatGPT, только без обратной связи и без следа в работе. Поэтому вопрос не в том, разрешать ли ИИ, а в том, как сделать его использование видимым.\n\n' +
-    'Главное возражение: ИИ лишает студента навыка письма. Но это верно, только если ИИ пишет вместо студента. Формирующая обратная связь, когда ИИ задаёт вопросы и указывает на слабые места, оставляет работу над текстом самому студенту.\n\n' +
-    'Видеть процесс надёжнее, чем угадывать по результату. Версии, подсказки и декларация показывают преподавателю, как появилась работа, без детекторов, которые ошибаются.'
-
   const submissions: Submission[] = [
-    { id: 1, work_id: 1, stage: 'topic', version: 1, text: 'ИИ в образовании', ai_declaration: none, created_at: '2026-11-05T08:10:00Z' },
-    { id: 2, work_id: 1, stage: 'topic', version: 2, text: 'Открытое использование ИИ в вузе вместо запрета: на примере СРСП', ai_declaration: none, created_at: '2026-11-06T12:30:00Z' },
-    {
-      id: 3, work_id: 1, stage: 'plan', version: 1,
-      text: '1. Введение: студенты уже пользуются ИИ\n2. Аргумент о навыке письма и контраргумент\n3. Аргумент об академической честности\n4. Вывод: видимость процесса вместо запрета',
-      ai_declaration: { used_ai: true, tools: ['izden_hints'], purpose: ['structure'], description: 'После подсказки Izden добавил в план отдельный пункт под контраргумент.' },
-      created_at: '2026-11-09T15:00:00Z',
-    },
-    { id: 4, work_id: 1, stage: 'draft', version: 1, text: 'Запрет ИИ в вузах не решает проблему, а прячет её. Студенты всё равно пользуются ChatGPT…', ai_declaration: none, created_at: '2026-11-11T17:20:00Z' },
-    {
-      id: 5, work_id: 1, stage: 'draft', version: 2,
-      text: 'Запрет ИИ в вузах не решает проблему, а прячет её. Студенты всё равно пользуются ChatGPT, только без обратной связи и без следа в работе. На олимпиаде по дебатам этот вопрос обсуждали как главный для образования…',
-      ai_declaration: { used_ai: true, tools: ['izden_hints', 'chatgpt'], purpose: ['structure', 'grammar'], description: 'ChatGPT предложил поменять местами 2 и 3 абзацы, я согласился. Грамматику проверил, правки внёс сам.' },
-      created_at: '2026-11-13T09:05:00Z',
-    },
-    { id: 6, work_id: 1, stage: 'final', version: 1, text: finalText, ai_declaration: none, created_at: '2026-11-15T04:30:00Z' },
-
-    { id: 7, work_id: 2, stage: 'topic', version: 1, text: 'ИИ и студенты', ai_declaration: none, created_at: '2026-11-07T11:00:00Z' },
-    { id: 8, work_id: 2, stage: 'topic', version: 2, text: 'Почему открытое использование ИИ лучше запрета в СРСП', ai_declaration: none, created_at: '2026-11-08T11:00:00Z' },
-    { id: 9, work_id: 2, stage: 'plan', version: 1, text: '1. Введение\n2. Аргумент о навыке письма\n3. Аргумент о честности\n4. Вывод', ai_declaration: none, created_at: '2026-11-10T11:00:00Z' },
-    {
-      id: 10, work_id: 2, stage: 'draft', version: 1,
-      text: 'Искусственный интеллект стал частью учёбы почти каждого студента. Вопрос уже не в том, запрещать ли ИИ, а в том, как сделать его использование открытым.\n\nСторонники запрета считают, что ИИ лишает студента навыка самостоятельно формулировать мысль.',
-      ai_declaration: none, created_at: '2026-11-14T13:20:00Z',
-    },
+    { id: 1, work_id: 1, stage: 'topic', version: 1, text: 'AI in education', ai_declaration: none, created_at: '2026-11-05T08:10:00Z' },
+    { id: 2, work_id: 1, stage: 'topic', version: 2, text: 'Open AI use at university instead of a ban: the case of supervised independent work (SRSP)', ai_declaration: none, created_at: '2026-11-06T12:30:00Z' },
+    { id: 3, work_id: 1, stage: 'plan', version: 1, text: '1. Introduction: students already use AI\n2. The writing skill argument and a counterargument\n3. The academic integrity argument\n4. Conclusion: a visible process instead of a ban', ai_declaration: { used_ai: true, tools: ['izden_hints'], purpose: ['structure'], description: 'After an Izden hint I added a separate point to the plan for the counterargument.' }, created_at: '2026-11-09T15:00:00Z' },
+    { id: 4, work_id: 1, stage: 'draft', version: 1, text: 'Banning AI at university does not solve the problem, it hides it. Students use ChatGPT anyway…', ai_declaration: none, created_at: '2026-11-11T17:20:00Z' },
+    { id: 5, work_id: 1, stage: 'draft', version: 2, text: 'Banning AI at university does not solve the problem, it hides it. Students use ChatGPT anyway, only without feedback and without any trace in their work. At a debate tournament this question was discussed as the most important one for education…', ai_declaration: { used_ai: true, tools: ['izden_hints', 'chatgpt'], purpose: ['structure', 'grammar'], description: 'ChatGPT suggested swapping paragraphs 2 and 3, and I agreed. I checked the grammar and made the corrections myself.' }, created_at: '2026-11-13T09:05:00Z' },
+    { id: 6, work_id: 1, stage: 'final', version: 1, text: 'Banning AI at university does not solve the problem, it hides it. Students use ChatGPT anyway, only without feedback and without any trace in their work. So the question is not whether to allow AI, but how to make its use visible.\n\nThe main objection is that AI takes away the skill of writing. But that is true only if AI writes instead of the student. Formative feedback, where AI asks questions and points out weak spots, leaves the work on the text to the student.\n\nSeeing the process is more reliable than guessing from the result. Versions, hints and the declaration show the teacher how the work came about, without detectors that make mistakes.', ai_declaration: none, created_at: '2026-11-15T04:30:00Z' },
+    { id: 7, work_id: 2, stage: 'topic', version: 1, text: 'AI and students', ai_declaration: none, created_at: '2026-11-07T11:00:00Z' },
+    { id: 8, work_id: 2, stage: 'topic', version: 2, text: 'Why open AI use is better than a ban in supervised independent work (SRSP)', ai_declaration: none, created_at: '2026-11-08T11:00:00Z' },
+    { id: 9, work_id: 2, stage: 'plan', version: 1, text: '1. Introduction\n2. The writing skill argument\n3. The integrity argument\n4. Conclusion', ai_declaration: none, created_at: '2026-11-10T11:00:00Z' },
+    { id: 10, work_id: 2, stage: 'draft', version: 1, text: 'Artificial intelligence has become part of almost every student\'s studies. The question is no longer whether to ban AI, but how to make its use open.\n\nSupporters of a ban believe that AI takes away a student\'s ability to put their thoughts into words on their own.', ai_declaration: none, created_at: '2026-11-14T13:20:00Z' },
   ]
 
   const feedback: Feedback[] = [
-    { id: 1, submission_id: 1, teacher_id: 1, text: 'Слишком широко. Что именно про ИИ в образовании вы хотите доказать?', created_at: '2026-11-05T10:00:00Z' },
-    { id: 2, submission_id: 4, teacher_id: 1, text: 'Тезис ясный, но аргумент про честность пока держится на ощущении. Нужен источник.', created_at: '2026-11-12T06:00:00Z' },
-    { id: 3, submission_id: 5, teacher_id: 1, text: 'Логика стала лучше. Пример с олимпиадой не связан с тезисом: либо свяжите, либо уберите.', created_at: '2026-11-14T05:15:00Z' },
-    { id: 4, submission_id: 10, teacher_id: 1, text: 'Тезис понятный. Во втором абзаце контраргумент назван, но не разобран: почему навык письма всё-таки сохраняется? Нужен хотя бы один источник.', created_at: '2026-11-15T04:40:00Z' },
+    { id: 1, submission_id: 1, teacher_id: 1, text: 'Too broad. What exactly do you want to prove about AI in education?', created_at: '2026-11-05T10:00:00Z' },
+    { id: 2, submission_id: 4, teacher_id: 1, text: 'The thesis is clear, but the integrity argument still rests on a feeling. You need a source.', created_at: '2026-11-12T06:00:00Z' },
+    { id: 3, submission_id: 5, teacher_id: 1, text: 'The logic is better now. The debate tournament example is not connected to the thesis: either connect it or remove it.', created_at: '2026-11-14T05:15:00Z' },
+    { id: 4, submission_id: 10, teacher_id: 1, text: 'The thesis is clear. In the second paragraph the counterargument is named but not addressed: why is the writing skill preserved after all? You need at least one source.', created_at: '2026-11-15T04:40:00Z' },
   ]
 
-  const hint = (id: number, work_id: number, stage: Stage, q: string, a: string, at: string): AIHintLog => ({
-    id, work_id, stage, student_question: q, student_text_snapshot: '', hint: a, created_at: at,
-  })
+  // Те же настоящие ответы модели, что и в backend/app/seed_hints.json.
   const hints: AIHintLog[] = [
-    hint(1, 1, 'plan', 'Все ли части есть в плане?', 'Где в плане место для возражений против вашей позиции? Чем заканчивается каждый пункт: выводом или новым вопросом?', '2026-11-08T14:00:00Z'),
-    hint(2, 1, 'plan', 'Как назвать понятие, когда ИИ помогает вопросами?', 'Посмотрите термин «формирующая обратная связь». Ключевые слова для поиска: «formative feedback», «AI writing assistant».', '2026-11-08T14:20:00Z'),
-    hint(3, 1, 'draft', 'Понятен ли главный тезис?', 'Тезис в первом абзаце понятен. Какой аргумент его поддерживает сильнее всего и стоит ли он первым?', '2026-11-10T16:00:00Z'),
-    hint(4, 1, 'draft', 'Как усилить аргумент про честность?', 'Аргумент держится на ощущении, что «детекторы ошибаются». Какие данные это подтверждают? Ключевые слова: «AI text detector accuracy».', '2026-11-12T16:10:00Z'),
-    hint(5, 1, 'draft', 'Нормальный ли порядок абзацев?', 'Какой абзац отвечает на главное возражение? Если он идёт последним, успевает ли читатель с ним согласиться?', '2026-11-12T16:30:00Z'),
-    hint(6, 1, 'draft', 'Нужен ли пример из жизни?', 'Пример полезен, если он прямо подтверждает тезис. Какой тезис подтверждает ваш пример?', '2026-11-12T16:45:00Z'),
-    hint(7, 1, 'final', 'Что проверить перед сдачей?', 'Отвечает ли вывод на вопрос из введения? Есть ли ссылка на каждый источник? Нет ли абзаца без своего тезиса?', '2026-11-14T18:00:00Z'),
-    hint(8, 2, 'draft', 'Достаточно ли раскрыт контраргумент во 2 абзаце?', 'Контраргумент назван, но ответ на него в одно предложение. Что вы понимаете под «навыком письма»: структуру, аргументацию, стиль?', '2026-11-15T05:48:00Z'),
-    hint(9, 2, 'draft', 'Напиши заключение к эссе', 'Готовое заключение не напишу, это ваша часть работы. Вместо этого: какой один вывод должен остаться у читателя? Отвечает ли он на вопрос из введения?', '2026-11-15T06:05:00Z'),
+    { id: 1, work_id: 1, stage: 'plan', student_question: 'Does my plan have all the parts?', student_text_snapshot: '1. Introduction: students already use AI\n2. The writing skill argument\n3. The academic integrity argument\n4. Conclusion: a visible process instead of a ban', hint: '- The structure is clear, but it\'s not obvious what question the essay answers. What exactly is your thesis: that bans fail, that process-based assessment works better, or something else? Your introduction and conclusion should frame that claim explicitly.\n\n- Both arguments (writing skill, academic integrity) seem to point against a ban, but the plan doesn\'t show a counterargument or opposing view. Who would defend a ban, and how would you answer them? Consider a short section for that.\n\n- The conclusion promises "a visible process," yet no section explains what that means or why it works. Where will you define it and give evidence? Look for research on process-based assessment, drafting portfolios, and institutional AI policies.', created_at: '2026-11-08T14:00:00Z' },
+    { id: 2, work_id: 1, stage: 'plan', student_question: 'What is it called when AI helps by asking questions?', student_text_snapshot: '1. Introduction: students already use AI\n2. The writing skill argument\n3. The academic integrity argument\n4. Conclusion: a visible process instead of a ban', hint: '1. Your question: this is usually called Socratic questioning or Socratic tutoring. Related search terms are "AI tutoring," "scaffolding," and "formative feedback," which describe support that guides thinking without producing the answer.\n\n2. Logic of your plan: the conclusion promises "a visible process instead of a ban," but nothing earlier sets up the ban or the alternative. What exactly is your thesis, and what position are you arguing against?\n\n3. Missing parts: where are the counterarguments and the evidence? Consider adding a section on opposing views and on what "visible process" would look like in practice (for example, drafts, logs, or reflection), and look for empirical studies and institutional policies on AI in education.', created_at: '2026-11-08T14:20:00Z' },
+    { id: 3, work_id: 1, stage: 'draft', student_question: 'Is my main thesis clear?', student_text_snapshot: 'Banning AI at university does not solve the problem, it hides it. Students use ChatGPT anyway, only without feedback and without any trace in their work.\n\nIt is fairer for the teacher to see the process than to check the work with a detector: detectors make mistakes.\n\nAI takes away the skill of writing only if it writes instead of the student. At a debate tournament this question was discussed as the most important one for education.', hint: '1. Your thesis is partly clear: a ban hides the problem rather than solving it. But it is spread across three paragraphs, and the claim that process visibility is fairer than detection reads like a second thesis. Ask yourself: what single position do you want the reader to remember, and which sentence states it?\n\n2. Several claims need evidence. "Students use ChatGPT anyway" and "detectors make mistakes" call for survey data and studies on detector accuracy or false positives. A debate tournament is not an academic source, so cut it or replace it with research on AI and writing skills.\n\n3. The link between paragraphs is weak. What does "seeing the process" concretely look like, and why does it address the skill-loss concern in your last paragraph?', created_at: '2026-11-10T16:00:00Z' },
+    { id: 4, work_id: 1, stage: 'draft', student_question: 'How can I strengthen the integrity argument?', student_text_snapshot: 'Banning AI at university does not solve the problem, it hides it. Students use ChatGPT anyway, only without feedback and without any trace in their work.\n\nIt is fairer for the teacher to see the process than to check the work with a detector: detectors make mistakes.\n\nAI takes away the skill of writing only if it writes instead of the student. At a debate tournament this question was discussed as the most important one for education.', hint: '1. The claim that students "use ChatGPT anyway" is an empirical assertion with no support. Look for survey studies on student AI use and on how bans affect behavior; ask yourself what evidence would show that bans push use underground rather than reduce it.\n\n2. "Detectors make mistakes" needs specifics: false-positive rates, and who is most affected (for example, non-native writers). Search for research on AI-detector accuracy and fairness. Also clarify what "seeing the process" means in practice, such as drafts, version history, or oral defenses, and how it protects integrity.\n\n3. The debate tournament is not evidence of importance. Replace it with educational research or institutional policy. Also define "integrity" explicitly: what exactly counts as a violation when AI is used openly with feedback?', created_at: '2026-11-12T16:10:00Z' },
+    { id: 5, work_id: 1, stage: 'draft', student_question: 'Is the order of my paragraphs OK?', student_text_snapshot: 'Banning AI at university does not solve the problem, it hides it. Students use ChatGPT anyway, only without feedback and without any trace in their work.\n\nIt is fairer for the teacher to see the process than to check the work with a detector: detectors make mistakes.\n\nAI takes away the skill of writing only if it writes instead of the student. At a debate tournament this question was discussed as the most important one for education.', hint: '1. The order mostly works: problem with bans, then the alternative (process over detectors), then the skill question. But the third paragraph feels like a new topic, and it is not clear how it connects to the first two. What is your central claim, and does each paragraph support it?\n\n2. Weak spots: "students use ChatGPT anyway" and "detectors make mistakes" are stated without evidence. Look for surveys on student AI use and studies of detector accuracy and false positives. The debate tournament is not a source, so what exactly was argued there, and by whom?\n\n3. Consider what "seeing the process" means in practice (drafts, version history, oral defense). Also, how would you answer the objection that a ban could still protect learning?', created_at: '2026-11-12T16:30:00Z' },
+    { id: 6, work_id: 1, stage: 'draft', student_question: 'Do I need a real-life example?', student_text_snapshot: 'Banning AI at university does not solve the problem, it hides it. Students use ChatGPT anyway, only without feedback and without any trace in their work.\n\nIt is fairer for the teacher to see the process than to check the work with a detector: detectors make mistakes.\n\nAI takes away the skill of writing only if it writes instead of the student. At a debate tournament this question was discussed as the most important one for education.', hint: 'Yes, but choose it carefully. Your claims about detector errors and students using ChatGPT "anyway" are factual, so they need evidence: look for empirical studies on detector false-positive rates and on student AI-use surveys. The debate tournament is not evidence, because it shows only that people discussed the topic, not that it is the most important question.\n\nAlso ask yourself: what concrete case of "seeing the process" (drafts, version history, oral defense) could show your point, and where might it fail?', created_at: '2026-11-12T16:45:00Z' },
+    { id: 7, work_id: 1, stage: 'final', student_question: 'What should I check before submitting?', student_text_snapshot: 'Banning AI at university does not solve the problem, it hides it. Students use ChatGPT anyway, only without feedback and without any trace in their work. So the question is not whether to allow AI, but how to make its use visible.\n\nThe main objection is that AI takes away the skill of writing. But that is true only if AI writes instead of the student. Formative feedback, where AI asks questions and points out weak spots, leaves the work on the text to the student.\n\nSeeing the process is more reliable than guessing from the result. Versions, hints and the declaration show the teacher how the work came about, without detectors that make mistakes.', hint: '1. Structure: does the text have a clear thesis, a logical order (problem, objection, your response, conclusion), and one main idea per paragraph? Right now there is no closing paragraph, so check whether the ending actually returns to your opening question.\n\n2. References: your claims about detectors making mistakes and about formative feedback preserving writing skill need support. Look for peer-reviewed studies on AI-detector accuracy and on feedback in writing instruction, and make sure each citation is formatted consistently in the style your course requires.\n\n3. Conclusion vs. question: does it answer "how to make AI use visible," not just say it should be? Ask yourself what the strongest counterargument to your view is, and whether you address it, for example the extra workload for teachers.', created_at: '2026-11-14T18:00:00Z' },
+    { id: 8, work_id: 2, stage: 'draft', student_question: 'Is the counterargument in paragraph 2 developed enough?', student_text_snapshot: 'Artificial intelligence has become part of almost every student\'s studies. The question is no longer whether to ban AI, but how to make its use open.\n\nSupporters of a ban believe that AI takes away a student\'s ability to put their thoughts into words on their own.', hint: '- Paragraph 2 is only one sentence: it states the opposing view but gives no reasoning, evidence, or example. Ask yourself: what exactly would a ban\'s supporters point to as proof that AI weakens independent expression?\n\n- The claim "almost every student" in paragraph 1 and the claim about ban supporters both need support. Look for surveys on student AI use and for research on writing skills and cognitive offloading.\n\n- A strong counterargument section also includes your response to it. Consider how you would show whether the concern is valid, partly valid, or answerable through open use, and how this links back to your thesis about openness.', created_at: '2026-11-15T05:48:00Z' },
+    { id: 9, work_id: 2, stage: 'draft', student_question: 'Write the conclusion for my essay', student_text_snapshot: 'Artificial intelligence has become part of almost every student\'s studies. The question is no longer whether to ban AI, but how to make its use open.\n\nSupporters of a ban believe that AI takes away a student\'s ability to put their thoughts into words on their own.', hint: 'I can\'t write the conclusion for you, but I can help you shape it yourself. What single main claim do you want a reader to remember after finishing your essay? And what argument do you plan to make in the body that this conclusion would sum up?', created_at: '2026-11-15T06:05:00Z' },
   ]
 
   return { seq: 100, users, assignments, works, submissions, feedback, hints, defense: [], grades: [] }

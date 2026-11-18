@@ -1,0 +1,52 @@
+{
+  "model": "claude-sonnet-5-5",
+  "provider": "anthropic",
+  "generated_at": "2026-11-18T11:35:05Z",
+  "hints": [
+    {
+      "stage": "plan",
+      "question": "Does my plan have all the parts?",
+      "hint": "- The structure is clear, but it's not obvious what question the essay answers. What exactly is your thesis: that bans fail, that process-based assessment works better, or something else? Your introduction and conclusion should frame that claim explicitly.\n\n- Both arguments (writing skill, academic integrity) seem to point against a ban, but the plan doesn't show a counterargument or opposing view. Who would defend a ban, and how would you answer them? Consider a short section for that.\n\n- The conclusion promises \"a visible process,\" yet no section explains what that means or why it works. Where will you define it and give evidence? Look for research on process-based assessment, drafting portfolios, and institutional AI policies."
+    },
+    {
+      "stage": "plan",
+      "question": "What is it called when AI helps by asking questions?",
+      "hint": "1. Your question: this is usually called Socratic questioning or Socratic tutoring. Related search terms are \"AI tutoring,\" \"scaffolding,\" and \"formative feedback,\" which describe support that guides thinking without producing the answer.\n\n2. Logic of your plan: the conclusion promises \"a visible process instead of a ban,\" but nothing earlier sets up the ban or the alternative. What exactly is your thesis, and what position are you arguing against?\n\n3. Missing parts: where are the counterarguments and the evidence? Consider adding a section on opposing views and on what \"visible process\" would look like in practice (for example, drafts, logs, or reflection), and look for empirical studies and institutional policies on AI in education."
+    },
+    {
+      "stage": "draft",
+      "question": "Is my main thesis clear?",
+      "hint": "1. Your thesis is partly clear: a ban hides the problem rather than solving it. But it is spread across three paragraphs, and the claim that process visibility is fairer than detection reads like a second thesis. Ask yourself: what single position do you want the reader to remember, and which sentence states it?\n\n2. Several claims need evidence. \"Students use ChatGPT anyway\" and \"detectors make mistakes\" call for survey data and studies on detector accuracy or false positives. A debate tournament is not an academic source, so cut it or replace it with research on AI and writing skills.\n\n3. The link between paragraphs is weak. What does \"seeing the process\" concretely look like, and why does it address the skill-loss concern in your last paragraph?"
+    },
+    {
+      "stage": "draft",
+      "question": "How can I strengthen the integrity argument?",
+      "hint": "1. The claim that students \"use ChatGPT anyway\" is an empirical assertion with no support. Look for survey studies on student AI use and on how bans affect behavior; ask yourself what evidence would show that bans push use underground rather than reduce it.\n\n2. \"Detectors make mistakes\" needs specifics: false-positive rates, and who is most affected (for example, non-native writers). Search for research on AI-detector accuracy and fairness. Also clarify what \"seeing the process\" means in practice, such as drafts, version history, or oral defenses, and how it protects integrity.\n\n3. The debate tournament is not evidence of importance. Replace it with educational research or institutional policy. Also define \"integrity\" explicitly: what exactly counts as a violation when AI is used openly with feedback?"
+    },
+    {
+      "stage": "draft",
+      "question": "Is the order of my paragraphs OK?",
+      "hint": "1. The order mostly works: problem with bans, then the alternative (process over detectors), then the skill question. But the third paragraph feels like a new topic, and it is not clear how it connects to the first two. What is your central claim, and does each paragraph support it?\n\n2. Weak spots: \"students use ChatGPT anyway\" and \"detectors make mistakes\" are stated without evidence. Look for surveys on student AI use and studies of detector accuracy and false positives. The debate tournament is not a source, so what exactly was argued there, and by whom?\n\n3. Consider what \"seeing the process\" means in practice (drafts, version history, oral defense). Also, how would you answer the objection that a ban could still protect learning?"
+    },
+    {
+      "stage": "draft",
+      "question": "Do I need a real-life example?",
+      "hint": "Yes, but choose it carefully. Your claims about detector errors and students using ChatGPT \"anyway\" are factual, so they need evidence: look for empirical studies on detector false-positive rates and on student AI-use surveys. The debate tournament is not evidence, because it shows only that people discussed the topic, not that it is the most important question.\n\nAlso ask yourself: what concrete case of \"seeing the process\" (drafts, version history, oral defense) could show your point, and where might it fail?"
+    },
+    {
+      "stage": "final",
+      "question": "What should I check before submitting?",
+      "hint": "1. Structure: does the text have a clear thesis, a logical order (problem, objection, your response, conclusion), and one main idea per paragraph? Right now there is no closing paragraph, so check whether the ending actually returns to your opening question.\n\n2. References: your claims about detectors making mistakes and about formative feedback preserving writing skill need support. Look for peer-reviewed studies on AI-detector accuracy and on feedback in writing instruction, and make sure each citation is formatted consistently in the style your course requires.\n\n3. Conclusion vs. question: does it answer \"how to make AI use visible,\" not just say it should be? Ask yourself what the strongest counterargument to your view is, and whether you address it, for example the extra workload for teachers."
+    },
+    {
+      "stage": "draft",
+      "question": "Is the counterargument in paragraph 2 developed enough?",
+      "hint": "- Paragraph 2 is only one sentence: it states the opposing view but gives no reasoning, evidence, or example. Ask yourself: what exactly would a ban's supporters point to as proof that AI weakens independent expression?\n\n- The claim \"almost every student\" in paragraph 1 and the claim about ban supporters both need support. Look for surveys on student AI use and for research on writing skills and cognitive offloading.\n\n- A strong counterargument section also includes your response to it. Consider how you would show whether the concern is valid, partly valid, or answerable through open use, and how this links back to your thesis about openness."
+    },
+    {
+      "stage": "draft",
+      "question": "Write the conclusion for my essay",
+      "hint": "I can't write the conclusion for you, but I can help you shape it yourself. What single main claim do you want a reader to remember after finishing your essay? And what argument do you plan to make in the body that this conclusion would sum up?"
+    }
+  ]
+}

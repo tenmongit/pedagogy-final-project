@@ -60,8 +60,8 @@ def error(response, status, code):
 def test_seed_matches_section_8(client):
     users = client.get("/api/users/demo").json()
     assert [u["role"] for u in users] == ["teacher", "student", "student", "student"]
-    teacher, _ = login(client, "Преподаватель")
-    daniyar, _ = login(client, "Данияр")
+    teacher, _ = login(client, "Demo Teacher")
+    daniyar, _ = login(client, "Daniyar")
 
     [assignment] = client.get("/api/assignments", headers=teacher).json()
     assert "my_work_id" not in assignment
@@ -79,14 +79,14 @@ def test_seed_matches_section_8(client):
     work = client.get(f"/api/works/{mine['my_work_id']}", headers=daniyar).json()
     assert [s["stage"] for s in work["stages"]] == ["topic", "plan", "draft", "final"]
     assert [len(s["submissions"]) for s in work["stages"]] == [2, 1, 2, 1]
-    assert work["stages"][0]["submissions"][0]["feedback"][0]["text"].startswith("Слишком широко")
+    assert work["stages"][0]["submissions"][0]["feedback"][0]["text"].startswith("Too broad")
     assert len(work["hints"]) == 7 and work["grade"] is None
 
 
 def test_full_flow_and_access_rules(client, demo_ai, monkeypatch):
-    teacher, teacher_user = login(client, "Преподаватель")
-    s1, s1_user = login(client, "Алия")
-    s2, _ = login(client, "Айгерим")
+    teacher, teacher_user = login(client, "Demo Teacher")
+    s1, s1_user = login(client, "Aliya")
+    s2, _ = login(client, "Aigerim")
 
     error(client.get("/api/assignments"), 401, "UNAUTHORIZED")
     error(client.get("/api/me", headers={"Authorization": "Bearer nope"}), 401, "UNAUTHORIZED")
@@ -270,7 +270,7 @@ def test_teacher_sees_only_own_assignments(client):
         session.add(other)
         session.commit()
     other, _ = login(client, "Другой")
-    daniyar, _ = login(client, "Данияр")
+    daniyar, _ = login(client, "Daniyar")
     mine = client.get("/api/assignments", headers=daniyar).json()[-1]
     aid, wid = mine["id"], mine["my_work_id"]
     submission = client.get(f"/api/works/{wid}", headers=daniyar).json()["stages"][0]["submissions"][0]
