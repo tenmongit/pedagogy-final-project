@@ -1,52 +1,171 @@
 {
   "model": "claude-sonnet-5-5",
   "provider": "anthropic",
-  "generated_at": "2026-11-18T11:40:21Z",
+  "generated_at": "2026-11-18T13:26:08Z",
   "hints": [
     {
       "stage": "plan",
       "question": "Does my plan have all the parts?",
-      "hint": "1. Your plan has no clear thesis. After the introduction, what exactly do you claim? Is your position stated early, or does it only appear in the conclusion?\n\n2. Sections 2 and 3 both seem to present problems. Where is the opposing view, such as benefits of AI or reasons to allow it, and where do you respond to it? Where will your evidence go?\n\n3. Your conclusion proposes a visible process, but no body section prepares it. What would make that idea feel earned? Consider whether it needs its own section, and what it would look like in practice."
+      "hint": "1. Your plan has no clear thesis. After the introduction, what exactly do you claim? Is your position stated early, or does it only appear in the conclusion?\n\n2. Sections 2 and 3 both seem to present problems. Where is the opposing view, such as benefits of AI or reasons to allow it, and where do you respond to it? Where will your evidence go?\n\n3. Your conclusion proposes a visible process, but no body section prepares it. What would make that idea feel earned? Consider whether it needs its own section, and what it would look like in practice.",
+      "work": 1
     },
     {
       "stage": "plan",
       "question": "What is it called when AI helps by asking questions?",
-      "hint": "1. The approach is called Socratic questioning (or Socratic tutoring). The helper asks guiding questions instead of giving answers, so you reach conclusions yourself. A related term is scaffolding: support that is gradually reduced as you improve.\n\n2. Your plan has no clear thesis. Is it for or against AI in education, or a middle position? Also, where is the counterargument, and which side does each of your two arguments support?\n\n3. Your conclusion mentions a \"visible process,\" but no section prepares it. What evidence will you use, and what would that process look like in practice? Useful search keywords: \"process-based assessment,\" \"AI literacy,\" \"formative feedback.\""
+      "hint": "1. The approach is called Socratic questioning (or Socratic tutoring). The helper asks guiding questions instead of giving answers, so you reach conclusions yourself. A related term is scaffolding: support that is gradually reduced as you improve.\n\n2. Your plan has no clear thesis. Is it for or against AI in education, or a middle position? Also, where is the counterargument, and which side does each of your two arguments support?\n\n3. Your conclusion mentions a \"visible process,\" but no section prepares it. What evidence will you use, and what would that process look like in practice? Useful search keywords: \"process-based assessment,\" \"AI literacy,\" \"formative feedback.\"",
+      "work": 1
     },
     {
       "stage": "draft",
       "question": "Is my main thesis clear?",
-      "hint": "1. Your thesis is not yet clear. The text makes three claims: bans fail, process-based assessment is fairer than detectors, and AI harms writing only when it replaces the student. Which one is your main position, and how do the others support it?\n\n2. Two claims need evidence: \"students use ChatGPT anyway\" and \"detectors make mistakes\". Look for student surveys on AI use and empirical studies of detector accuracy and false positives.\n\n3. The debate tournament is not an argument, since it shows only that people discussed the topic. What reasoning or evidence would persuade a skeptical reader that this question matters most for education?"
+      "hint": "1. Your thesis is not yet clear. The text makes three claims: bans fail, process-based assessment is fairer than detectors, and AI harms writing only when it replaces the student. Which one is your main position, and how do the others support it?\n\n2. Two claims need evidence: \"students use ChatGPT anyway\" and \"detectors make mistakes\". Look for student surveys on AI use and empirical studies of detector accuracy and false positives.\n\n3. The debate tournament is not an argument, since it shows only that people discussed the topic. What reasoning or evidence would persuade a skeptical reader that this question matters most for education?",
+      "work": 1
     },
     {
       "stage": "draft",
       "question": "How can I strengthen the integrity argument?",
-      "hint": "1. Define integrity first. What exactly counts as a violation: hidden use, copying, or unacknowledged help? Without this, your argument that a visible process is fairer than a ban stays vague.\n\n2. Two claims need evidence: that students use AI anyway, and that detectors err. Look for university surveys and studies on false-positive rates. Keywords: \"AI detector accuracy\", \"false positives\", \"student AI use survey\".\n\n3. The debate tournament is an anecdote, not support. Also ask: how exactly would a teacher see the process, and what could go wrong, such as extra workload or students faking drafts?"
+      "hint": "1. Define integrity first. What exactly counts as a violation: hidden use, copying, or unacknowledged help? Without this, your argument that a visible process is fairer than a ban stays vague.\n\n2. Two claims need evidence: that students use AI anyway, and that detectors err. Look for university surveys and studies on false-positive rates. Keywords: \"AI detector accuracy\", \"false positives\", \"student AI use survey\".\n\n3. The debate tournament is an anecdote, not support. Also ask: how exactly would a teacher see the process, and what could go wrong, such as extra workload or students faking drafts?",
+      "work": 1
     },
     {
       "stage": "draft",
       "question": "Is the order of my paragraphs OK?",
-      "hint": "1) Your order is not yet clear because there is no stated main claim. Ask yourself: what is your thesis, and does each paragraph build toward it? The third paragraph, about when AI harms writing skill, may need to come earlier as the core question.\n\n2) Several claims need evidence: that students use AI anyway, and that detectors make mistakes. Look for surveys on student AI use and research on detector accuracy and false positives.\n\n3) A debate discussion shows interest in the topic, not that it is important. What stronger support could you use? Also, how does \"seeing the process\" connect to the skill argument?"
+      "hint": "1) Your order is not yet clear because there is no stated main claim. Ask yourself: what is your thesis, and does each paragraph build toward it? The third paragraph, about when AI harms writing skill, may need to come earlier as the core question.\n\n2) Several claims need evidence: that students use AI anyway, and that detectors make mistakes. Look for surveys on student AI use and research on detector accuracy and false positives.\n\n3) A debate discussion shows interest in the topic, not that it is important. What stronger support could you use? Also, how does \"seeing the process\" connect to the skill argument?",
+      "work": 1
     },
     {
       "stage": "draft",
       "question": "Do I need a real-life example?",
-      "hint": "1. Yes, but evidence matters more than anecdote. \"Students use ChatGPT anyway\" and \"detectors make mistakes\" are factual claims. Look for student surveys on AI use and studies of detector accuracy and false positives.\n\n2. The debate tournament is too vague to work as support. Who judged the question \"most important,\" and on what grounds? Ask yourself whether it proves anything or only shows the topic is popular.\n\n3. Your fairness argument needs a concrete case of \"seeing the process.\" What would a teacher actually look at, and what would a skeptic say about the extra workload or students who fake the process?"
+      "hint": "1. Yes, but evidence matters more than anecdote. \"Students use ChatGPT anyway\" and \"detectors make mistakes\" are factual claims. Look for student surveys on AI use and studies of detector accuracy and false positives.\n\n2. The debate tournament is too vague to work as support. Who judged the question \"most important,\" and on what grounds? Ask yourself whether it proves anything or only shows the topic is popular.\n\n3. Your fairness argument needs a concrete case of \"seeing the process.\" What would a teacher actually look at, and what would a skeptic say about the extra workload or students who fake the process?",
+      "work": 1
     },
     {
       "stage": "final",
       "question": "What should I check before submitting?",
-      "hint": "1. Structure: Check that you have a clear thesis, a counterargument with a response, and a closing part. Right now the text ends without a conclusion. Does each paragraph do one job and lead to the next?\n\n2. References: Claims such as \"detectors make mistakes\" and \"feedback leaves the work to the student\" need evidence. Look for peer-reviewed studies on formative feedback and on AI-detector accuracy. Check that the citation style is consistent.\n\n3. Conclusion: Does it answer the question you raised, how to make AI use visible? Also ask whether versions and declarations could be faked, and whether you address that weakness."
+      "hint": "1. Structure: Check that you have a clear thesis, a counterargument with a response, and a closing part. Right now the text ends without a conclusion. Does each paragraph do one job and lead to the next?\n\n2. References: Claims such as \"detectors make mistakes\" and \"feedback leaves the work to the student\" need evidence. Look for peer-reviewed studies on formative feedback and on AI-detector accuracy. Check that the citation style is consistent.\n\n3. Conclusion: Does it answer the question you raised, how to make AI use visible? Also ask whether versions and declarations could be faked, and whether you address that weakness.",
+      "work": 1
     },
     {
       "stage": "draft",
       "question": "Is the counterargument in paragraph 2 developed enough?",
-      "hint": "1. No, it is not developed yet. Paragraph 2 only states the opposing view in one sentence. What reasoning or evidence would its supporters give? Who exactly are these \"supporters\": teachers, institutions, researchers?\n\n2. The claim that AI takes away the ability to express thoughts is presented as a belief, not an argument. What would show it is true or false? Look for studies on writing skills and AI use, and for university policy documents.\n\n3. Your thesis needs a response to this view. Does it fully fail, or is it partly right? Also, \"almost every student\" in paragraph 1 needs a survey or statistic as support."
+      "hint": "1. No, it is not developed yet. Paragraph 2 only states the opposing view in one sentence. What reasoning or evidence would its supporters give? Who exactly are these \"supporters\": teachers, institutions, researchers?\n\n2. The claim that AI takes away the ability to express thoughts is presented as a belief, not an argument. What would show it is true or false? Look for studies on writing skills and AI use, and for university policy documents.\n\n3. Your thesis needs a response to this view. Does it fully fail, or is it partly right? Also, \"almost every student\" in paragraph 1 needs a survey or statistic as support.",
+      "work": 2
     },
     {
       "stage": "draft",
       "question": "Write the conclusion for my essay",
-      "hint": "I'm sorry, but I can't write the conclusion for you, since it needs to be your own work. What is the main claim your essay argues for, and which point from your body paragraphs do you most want readers to remember?"
+      "hint": "I'm sorry, but I can't write the conclusion for you, since it needs to be your own work. What is the main claim your essay argues for, and which point from your body paragraphs do you most want readers to remember?",
+      "work": 2
+    },
+    {
+      "work": 3,
+      "stage": "topic",
+      "question": "How can I make my topic narrower?",
+      "hint": "1. Define the subject: which kind of \"AI tutor\" do you mean, a chatbot giving feedback, a grammar checker, or a tutor for planning and argument? Choosing one tool type removes a lot of ground.\n\n2. Specify the audience and setting: which students (first-year, ESL, secondary school, university) and which course? Who will you ask, and for how long?\n\n3. Choose one angle and material: effects on revision quality, student confidence, or instructor workload? Think about what you can realistically examine, such as student drafts, surveys, or interviews. Useful search keywords: \"automated writing feedback,\" \"writing pedagogy,\" \"learner autonomy.\""
+    },
+    {
+      "work": 3,
+      "stage": "draft",
+      "question": "What kind of evidence would support my point about fast feedback?",
+      "hint": "1. Your claim that comments are \"read once and forgotten\" is an assumption. Look for empirical research on feedback timing and revision. Useful keywords: \"feedback timeliness,\" \"delayed versus immediate feedback,\" \"student uptake of feedback.\"\n\n2. Consider local evidence. A short survey or your course's own data could show how long feedback takes and whether students revise. How would you show that students \"moved on\"?\n\n3. Speed alone does not prove learning. What evidence shows that fast AI comments are accurate and lead to better writing? Search \"automated writing feedback effectiveness\" in composition studies, and consider a counterargument about delayed feedback."
+    },
+    {
+      "work": 3,
+      "stage": "final",
+      "question": "Does my conclusion answer my question?",
+      "hint": "1. Your question asks whether fast AI feedback makes students revise more. Check your survey: it compares any comments within two days, not necessarily AI comments. Ask yourself: does this data actually test AI feedback, or only speed?\n\n2. Your closing idea (AI questions plus teacher judgement) is a new claim about roles, not an answer to the revision question. Ask: what direct statement does your evidence support, and is it stated plainly?\n\n3. Final checklist:\n- Structure: question, evidence, limits, conclusion in a clear order.\n- References: any support beyond your own survey, such as studies on feedback timing or revision.\n- Conclusion: does it answer the question, with the same caution as your limits?"
+    },
+    {
+      "work": 4,
+      "stage": "plan",
+      "question": "What is missing in my plan?",
+      "hint": "1. Your plan has no central question or argument. Do you want to evaluate detector accuracy, criticize university policy, or propose alternatives? Without that, the sections read as a list of topics rather than a line of reasoning.\n\n2. Something seems missing between \"false positives\" and \"Conclusion\": what should universities do instead? Consider sections on policy responses, assessment design, and a counterargument: where might detectors be useful, and for whom?\n\n3. What evidence will support each section? Look for peer-reviewed accuracy studies, university policy documents, and reports on student appeals. Keywords: \"false positive rate\", \"academic integrity\", \"non-native English writers\"."
+    },
+    {
+      "work": 5,
+      "stage": "plan",
+      "question": "Where should the counterargument go in my plan?",
+      "hint": "1. Your plan has no body yet, so a counterargument has nothing to answer. Ask yourself: where are your main claims and evidence? Add those sections first, then place the counterargument after them and before the Conclusion.\n\n2. A counterargument can be a separate section or sit inside each claim it challenges. Which fits your paper? A single central thesis suits a separate section. Several distinct claims suit the second option.\n\n3. Check the middle: \"Prompts and research questions\" is unclear. Are these your questions or an assignment's prompts? Also consider whether you need a methods or sources section. What will your reader expect between the questions and the conclusion?"
+    },
+    {
+      "work": 5,
+      "stage": "draft",
+      "question": "How do I answer the objection that prompting is a temporary trick?",
+      "hint": "1. Test the objection's logic. Ask yourself: does a better model remove the need to state your goal, context, and criteria? Decide whether prompting is really a \"trick\" or a form of clear communication, and say which one you are defending.\n\n2. Your draft only reports the teachers' view. Where is your counterargument? Also, \"students often take it as it is\" is a claim with no evidence yet. Look for research on how students evaluate AI answers, using keywords like \"AI literacy\" and \"critical evaluation of AI output.\"\n\n3. Consider linking prompting to a broader skill, such as problem formulation. A concept like this can be explained briefly: a skill is durable if it transfers across tools. Ask whether your argument shows that transfer."
+    },
+    {
+      "work": 6,
+      "stage": "plan",
+      "question": "Is the order of points in my plan logical?",
+      "hint": "1. The order from general to specific works: you introduce options, then argue for one. But point 3 jumps to a conclusion. What criteria define \"honest,\" and where will you show them before judging the policies?\n\n2. Your plan lacks counterarguments and evidence. What are the strongest objections to disclosure, and what do ban and free use offer that disclosure lacks? Where will you compare the three fairly?\n\n3. Your plan doesn't say what is being regulated or in what context (education, research, media?). Should a short background section come before the policy types? Also consider what kinds of sources, such as institutional policies or empirical studies, would support each section."
+    },
+    {
+      "work": 6,
+      "stage": "draft",
+      "question": "Where is my argument weakest?",
+      "hint": "1. Your claims are unsupported. Why is a ban \"impossible to check\"? What do you know about detection tools and their error rates? Look for institutional policy documents and empirical studies on AI detection.\n\n2. Disclosure is presented as the solution without a test. Can teachers verify that students report honestly? Does it solve the same checking problem you raised about bans? Consider the counterarguments.\n\n3. There is no clear thesis yet. What exactly are you arguing: that disclosure is best, or that all three approaches have limits? Also, \"free use is honest\" is a leap. Honest about what?"
+    },
+    {
+      "work": 7,
+      "stage": "plan",
+      "question": "How should I order the sections of my plan?",
+      "hint": "1. Your plan reads like a list of topics, not an argument. Ask yourself: what exactly is the research question or claim connecting engineering students, English, and AI? Which section should answer it?\n\n2. Pieces seem to be missing: where are the background on students' language needs, the method (how you will gather evidence or examples), and a section on benefits, so \"Problems\" is not left alone? What would come between sections 2 and 3?\n\n3. Check the flow: context, then the tool's role, then benefits, then limitations, then evidence or discussion, then conclusion. Does each section logically lead to the next, and is \"Problems\" specific enough to be one section?"
     }
-  ]
+  ],
+  "defense": {
+    "3": [
+      {
+        "question": "Your survey asked about \"any comments within two days\", but your research question is about feedback from an AI tutor. What exactly did the 24 students receive, and how far does your result (twice versus once) say anything about AI feedback specifically rather than just fast feedback?",
+        "why": "The final text reports that \"Those who received any comments within two days revised it twice on average, the others once,\" while the topic asks about AI tutors. The final-stage hint also pointed out that the data may test speed rather than AI."
+      },
+      {
+        "question": "You write that \"the groups were not equal\" and that the data \"shows a direction, not a proof.\" Name one way the groups might have differed that could explain the difference in revisions, and say how you would change the survey to account for it.",
+        "why": "The student acknowledges the limits of the sample (24 students, unequal groups) but does not say what the inequality was. This question asks them to defend or extend that caveat."
+      },
+      {
+        "question": "Your conclusion proposes that AI should ask questions and the teacher should make the final judgement. How does this follow from your survey result, and what would you say to someone who argues that this is a new claim about roles rather than an answer to whether students revise more?",
+        "why": "The final hint raised exactly this: the closing idea about \"Fast questions from AI and a final judgement from the teacher\" is a claim about roles, not the revision question. The student must justify the link."
+      },
+      {
+        "question": "Your declaration says that after a hint that your claims needed data, you ran a short survey in your group. Walk me through how you collected and counted the revisions, and how you checked that the numbers (two on average versus one) were accurate.",
+        "why": "The draft version 2 declaration mentions an Izden hint that led to the survey. This question asks the student to explain their own use of that hint and how they verified the data they added."
+      }
+    ],
+    "4": [
+      {
+        "question": "Your final text says that \"Simple and correct English is predictable, so students who write carefully in a second language can be flagged more often than native speakers.\" Can you explain in your own words how a detector measures predictability, and why this would affect second-language writers? What evidence would you point to if a teacher challenged this claim?",
+        "why": "This is the central factual claim of the essay. It appears in the draft and the final text, but the text names no source or study. The question checks whether the student understands the mechanism and can support it."
+      },
+      {
+        "question": "You conclude that \"a short talk about the work shows much more than a number.\" Suppose a teacher objects that talking to every flagged student takes too much time and is subjective. How would you answer, and what would such a talk involve in practice?",
+        "why": "The conclusion proposes an alternative to detectors. The hint log asked \"what should universities do instead?\" and suggested a counterargument, but the final text gives only one sentence on this. The question asks the student to defend and develop the proposal against an objection."
+      },
+      {
+        "question": "In your declaration you say you wrote the third paragraph in Russian, had ChatGPT translate it into English, and then \"changed some words myself.\" Which words or phrases did you change, and why? How did you check that the English still said exactly what you meant, for example in the sentence about \"a conversation about honesty that the student cannot win\"?",
+        "why": "The declaration lists ChatGPT for translation at the final stage. The question asks the student to describe how they used and checked the tool, with the third paragraph as a concrete example."
+      },
+      {
+        "question": "After the Izden hint asked who is affected by detector errors, you added point 3 on false positives. The final text says a false positive \"can mean a failed course.\" How did the hint change your argument, and what makes the harm to the student serious enough to support your conclusion that detector scores should not be used as evidence?",
+        "why": "The declaration says the plan changed after a hint, and the final text develops this point. The question asks the student to explain that change and connect it to the final conclusion."
+      }
+    ],
+    "5": [
+      {
+        "question": "You write that \"A good prompt has a lot in common with a good research question. Both need a clear scope, context and a way to check the answer.\" Take one request you actually rewrote and walk us through it: what was the original, what scope, context and check did you add, and how did the answer change?",
+        "why": "The final text says \"When I rewrote my own requests this way, I spent less time and noticed mistakes in the answers more often.\" No specific example or evidence is given, so the student can explain the experience behind this claim."
+      },
+      {
+        "question": "Your final text says the objection that prompting is a temporary trick is right \"about phrases\" but not about the \"habit of asking precise questions and verifying what comes back.\" Where exactly is the line between the two? Give an example of a phrase that would become obsolete and an example of the habit that would stay useful.",
+        "why": "This is the central response to the counterargument in the final text. The draft only reported that \"Some teachers say that prompting is a trick,\" so the response was added between versions. Explaining the distinction tests whether the student understands it."
+      },
+      {
+        "question": "The final text proposes \"one seminar in the first year and assignments where students show their questions together with their answers.\" Why is this better than a separate course? What would a student submit, and how would a teacher judge the quality of the questions?",
+        "why": "The conclusion in the plan says \"teach it inside existing courses, not as a separate one.\" The student must justify this choice and show how the proposal would work in practice."
+      },
+      {
+        "question": "Your AI declaration says an Izden hint helped you structure the plan, and the plan now includes the counterargument and response (points 3 and 4). How did you decide what to do with the hint? The hint also noted that \"students often take it as it is\" has no evidence yet. How would you support or verify that claim?",
+        "why": "The declaration says \"An Izden hint asked where my counterargument is. I added points 3 and 4 to the plan.\" The draft-stage hint pointed out that the claim has no evidence, and the final text still repeats it without a source. The student can explain how the hints were used and checked."
+      }
+    ]
+  }
 }
