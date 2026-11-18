@@ -223,3 +223,85 @@
     cursor: pointer;
   }
 }
+
+/* --- Ожидание ответа ИИ (components/izden/AiThinking.tsx) ---------------------
+   Искра медленно поворачивается и «дышит», текст этапа переливается, строки-заготовки
+   мерцают. При prefers-reduced-motion всё статично. */
+
+@keyframes ai-sparkle {
+  0% { transform: rotate(0deg) scale(0.86); }
+  50% { transform: rotate(45deg) scale(1.06); }
+  100% { transform: rotate(90deg) scale(0.86); }
+}
+@keyframes ai-glow {
+  0%, 100% { opacity: 0.25; transform: scale(0.7); }
+  50% { opacity: 0.6; transform: scale(1.15); }
+}
+@keyframes ai-shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+@keyframes ai-phase-in {
+  from { opacity: 0; transform: translateY(3px); filter: blur(2px); }
+  to { opacity: 1; transform: none; filter: none; }
+}
+@keyframes ai-enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+.ai-sparkle {
+  animation: ai-sparkle 2.4s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  transform-origin: center;
+}
+.ai-glow {
+  background: radial-gradient(circle, var(--ai) 0%, transparent 70%);
+  animation: ai-glow 2.4s ease-in-out infinite;
+}
+.ai-shimmer-text {
+  color: transparent;
+  background: linear-gradient(
+    90deg,
+    var(--muted-foreground) 0%,
+    var(--muted-foreground) 35%,
+    var(--ai) 50%,
+    var(--muted-foreground) 65%,
+    var(--muted-foreground) 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: ai-shimmer 2.2s linear infinite;
+}
+.ai-phase {
+  animation: ai-phase-in 0.35s ease-out both;
+}
+.ai-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--ai-line) 0%,
+    color-mix(in oklab, var(--ai) 22%, var(--ai-line)) 50%,
+    var(--ai-line) 100%
+  );
+  background-size: 200% 100%;
+  animation: ai-shimmer 1.6s ease-in-out infinite;
+}
+/* Новая подсказка или новые вопросы: мягко проявляются на месте ожидания. */
+.ai-enter {
+  animation: ai-enter 0.32s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-sparkle,
+  .ai-glow,
+  .ai-skeleton,
+  .ai-phase,
+  .ai-enter {
+    animation: none;
+  }
+  .ai-shimmer-text {
+    animation: none;
+    color: var(--muted-foreground);
+    background: none;
+  }
+}

@@ -42,12 +42,12 @@ export function AssignmentPage() {
 }
 
 function AssignmentHead({ assignment: a }: { assignment: Assignment }) {
-  const { t, formatDate } = useI18n()
+  const { t, formatDateTime } = useI18n()
   return (
     <div className="flex flex-col gap-1.5">
       <PageTitle>{a.title}</PageTitle>
       {a.description && <p className="text-muted-foreground">{a.description}</p>}
-      {a.deadline && <p className="text-[13px] text-muted-foreground">{t.assignments.deadline(formatDate(a.deadline))}</p>}
+      {a.deadline && <p className="text-[13px] text-muted-foreground">{t.assignments.deadline(formatDateTime(a.deadline))}</p>}
     </div>
   )
 }

@@ -145,6 +145,8 @@ export function resetMockDb() {
 const nowIso = () => new Date().toISOString()
 const nextId = () => ++db.seq
 const wait = () => new Promise((r) => setTimeout(r, 180 + Math.random() * 220))
+// Настоящая модель отвечает за 5–10 с; на моках держим 1,5–3 с, чтобы было видно анимацию ожидания.
+const aiWait = () => new Promise((r) => setTimeout(r, 1500 + Math.random() * 1500))
 
 function fail(status: number, message: string): never {
   throw new ApiError(status, codeForStatus(status), message)
@@ -375,7 +377,7 @@ export const mockApi: IzdenApi = {
   },
 
   async requestHint(workId, input) {
-    await wait()
+    await aiWait()
     const w = ownWorkForWrite(currentUser(), workId)
     const question = input.question?.trim() ?? ''
     if (!question) fail(400, 'Напишите вопрос к ИИ')
@@ -406,7 +408,7 @@ export const mockApi: IzdenApi = {
   },
 
   async generateDefenseQuestions(workId) {
-    await wait()
+    await aiWait()
     const user = currentUser()
     requireRole(user, 'teacher')
     const w = findWork(user, workId)
