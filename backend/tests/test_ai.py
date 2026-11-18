@@ -67,6 +67,29 @@ def test_invalid_defense_answers(monkeypatch, answer):
         service.generate_defense_questions(service.DefenseContext("Текст работы"))
 
 
+@pytest.mark.parametrize(
+    ("text", "language"),
+    [
+        ("Banning AI does not solve the problem. Студенты", "en"),
+        ("Запрет ИИ не решает проблему, а прячет её.", "ru"),
+        ("Жас бала анадан туғанда екі түрлі мінезбен туады.", "kk"),
+        ("2026 — 42!", None),
+        ("", None),
+    ],
+)
+def test_detect_language(text, language):
+    assert service.detect_language(text) == language
+
+
+def test_hint_language_follows_work_then_question(monkeypatch):
+    systems = []
+    monkeypatch.setattr(provider, "complete", lambda system, data: systems.append(system) or "Why?")
+    service.generate_hint(service.HintContext("draft", "Понятен ли тезис?", "My thesis is clear."))
+    service.generate_hint(service.HintContext("topic", "О чём писать?"))
+    assert systems[0].endswith("Write the whole answer in English.")
+    assert systems[1].endswith("Пиши весь ответ на русском языке.")
+
+
 def test_long_hint_is_rejected(monkeypatch):
     monkeypatch.setattr(provider, "complete", lambda *args: "слово " * 151)
     with pytest.raises(provider.AIUnavailable):

@@ -1,13 +1,17 @@
 """Демо-данные (раздел 8): создаются при первом запуске на пустой базе (SEED_DEMO=1).
 
-1 преподаватель, 3 студента, 1 задание. У Данияра работа на финале с историей версий
-и подсказок, у Айгерим — на черновике, у Алии работы нет. Данные совпадают с моками фронта.
+1 преподаватель, 3 студента, 1 задание. У Daniyar работа на финале с историей версий
+и подсказок, у Aigerim — на черновике, у Aliya работы нет. Данные совпадают с моками фронта.
+Тексты работ на английском: защита проходит на английском, а ИИ отвечает на языке работы.
 
-Подсказки в сиде — настоящие ответы модели claude-sonnet-5-5 на эти вопросы и тексты, полученные
-16.11.2026 через app.ai.service.generate_hint с промптами из app/ai/prompts.py. Вручную не правились.
+Ответы подсказок лежат в seed_hints.json: это настоящие ответы модели на эти вопросы и тексты,
+полученные скриптом scripts/seed_hints.py через app.ai.service.generate_hint с промптами из
+app/ai/prompts.py. Вручную не правились. Модель и время генерации записаны в том же файле.
 """
 
+import json
 from datetime import datetime, timezone
+from pathlib import Path
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -17,128 +21,123 @@ from .models import AIHintLog, Assignment, Feedback, Submission, User, Work
 NONE = {"used_ai": False, "tools": [], "purpose": [], "description": ""}
 
 FINAL_TEXT = (
-    "Запрет ИИ в вузах не решает проблему, а прячет её. Студенты всё равно пользуются ChatGPT, "
-    "только без обратной связи и без следа в работе. Поэтому вопрос не в том, разрешать ли ИИ, "
-    "а в том, как сделать его использование видимым.\n\n"
-    "Главное возражение: ИИ лишает студента навыка письма. Но это верно, только если ИИ пишет "
-    "вместо студента. Формирующая обратная связь, когда ИИ задаёт вопросы и указывает на слабые "
-    "места, оставляет работу над текстом самому студенту.\n\n"
-    "Видеть процесс надёжнее, чем угадывать по результату. Версии, подсказки и декларация "
-    "показывают преподавателю, как появилась работа, без детекторов, которые ошибаются."
+    "Banning AI at university does not solve the problem, it hides it. Students use ChatGPT "
+    "anyway, only without feedback and without any trace in their work. So the question is not "
+    "whether to allow AI, but how to make its use visible.\n\n"
+    "The main objection is that AI takes away the skill of writing. But that is true only if AI "
+    "writes instead of the student. Formative feedback, where AI asks questions and points out "
+    "weak spots, leaves the work on the text to the student.\n\n"
+    "Seeing the process is more reliable than guessing from the result. Versions, hints and the "
+    "declaration show the teacher how the work came about, without detectors that make mistakes."
 )
 
 # (work, stage, version, text, declaration, created_at)
 SUBMISSIONS = [
-    (1, "topic", 1, "ИИ в образовании", NONE, "2026-11-05T08:10"),
-    (1, "topic", 2, "Открытое использование ИИ в вузе вместо запрета: на примере СРСП", NONE, "2026-11-06T12:30"),
+    (1, "topic", 1, "AI in education", NONE, "2026-11-05T08:10"),
+    (
+        1, "topic", 2,
+        "Open AI use at university instead of a ban: the case of supervised independent work (SRSP)",
+        NONE, "2026-11-06T12:30",
+    ),
     (
         1, "plan", 1,
-        "1. Введение: студенты уже пользуются ИИ\n2. Аргумент о навыке письма и контраргумент\n"
-        "3. Аргумент об академической честности\n4. Вывод: видимость процесса вместо запрета",
+        "1. Introduction: students already use AI\n2. The writing skill argument and a counterargument\n"
+        "3. The academic integrity argument\n4. Conclusion: a visible process instead of a ban",
         {
             "used_ai": True, "tools": ["izden_hints"], "purpose": ["structure"],
-            "description": "После подсказки Izden добавил в план отдельный пункт под контраргумент.",
+            "description": "After an Izden hint I added a separate point to the plan for the counterargument.",
         },
         "2026-11-09T15:00",
     ),
     (
         1, "draft", 1,
-        "Запрет ИИ в вузах не решает проблему, а прячет её. Студенты всё равно пользуются ChatGPT…",
+        "Banning AI at university does not solve the problem, it hides it. Students use ChatGPT anyway…",
         NONE, "2026-11-11T17:20",
     ),
     (
         1, "draft", 2,
-        "Запрет ИИ в вузах не решает проблему, а прячет её. Студенты всё равно пользуются ChatGPT, "
-        "только без обратной связи и без следа в работе. На олимпиаде по дебатам этот вопрос "
-        "обсуждали как главный для образования…",
+        "Banning AI at university does not solve the problem, it hides it. Students use ChatGPT anyway, "
+        "only without feedback and without any trace in their work. At a debate tournament this question "
+        "was discussed as the most important one for education…",
         {
             "used_ai": True, "tools": ["izden_hints", "chatgpt"], "purpose": ["structure", "grammar"],
-            "description": "ChatGPT предложил поменять местами 2 и 3 абзацы, я согласился. "
-            "Грамматику проверил, правки внёс сам.",
+            "description": "ChatGPT suggested swapping paragraphs 2 and 3, and I agreed. "
+            "I checked the grammar and made the corrections myself.",
         },
         "2026-11-13T09:05",
     ),
     (1, "final", 1, FINAL_TEXT, NONE, "2026-11-15T04:30"),
-    (2, "topic", 1, "ИИ и студенты", NONE, "2026-11-07T11:00"),
-    (2, "topic", 2, "Почему открытое использование ИИ лучше запрета в СРСП", NONE, "2026-11-08T11:00"),
+    (2, "topic", 1, "AI and students", NONE, "2026-11-07T11:00"),
+    (
+        2, "topic", 2, "Why open AI use is better than a ban in supervised independent work (SRSP)",
+        NONE, "2026-11-08T11:00",
+    ),
     (
         2, "plan", 1,
-        "1. Введение\n2. Аргумент о навыке письма\n3. Аргумент о честности\n4. Вывод",
+        "1. Introduction\n2. The writing skill argument\n3. The integrity argument\n4. Conclusion",
         NONE, "2026-11-10T11:00",
     ),
     (
         2, "draft", 1,
-        "Искусственный интеллект стал частью учёбы почти каждого студента. Вопрос уже не в том, "
-        "запрещать ли ИИ, а в том, как сделать его использование открытым.\n\n"
-        "Сторонники запрета считают, что ИИ лишает студента навыка самостоятельно формулировать мысль.",
+        "Artificial intelligence has become part of almost every student's studies. The question is no "
+        "longer whether to ban AI, but how to make its use open.\n\n"
+        "Supporters of a ban believe that AI takes away a student's ability to put their thoughts into "
+        "words on their own.",
         NONE, "2026-11-14T13:20",
     ),
 ]
 
 # (номер версии в SUBMISSIONS с 1, text, created_at)
 FEEDBACK = [
-    (1, "Слишком широко. Что именно про ИИ в образовании вы хотите доказать?", "2026-11-05T10:00"),
-    (4, "Тезис ясный, но аргумент про честность пока держится на ощущении. Нужен источник.", "2026-11-12T06:00"),
-    (5, "Логика стала лучше. Пример с олимпиадой не связан с тезисом: либо свяжите, либо уберите.", "2026-11-14T05:15"),
+    (1, "Too broad. What exactly do you want to prove about AI in education?", "2026-11-05T10:00"),
+    (4, "The thesis is clear, but the integrity argument still rests on a feeling. You need a source.", "2026-11-12T06:00"),
+    (
+        5,
+        "The logic is better now. The debate tournament example is not connected to the thesis: "
+        "either connect it or remove it.",
+        "2026-11-14T05:15",
+    ),
     (
         10,
-        "Тезис понятный. Во втором абзаце контраргумент назван, но не разобран: почему навык "
-        "письма всё-таки сохраняется? Нужен хотя бы один источник.",
+        "The thesis is clear. In the second paragraph the counterargument is named but not addressed: "
+        "why is the writing skill preserved after all? You need at least one source.",
         "2026-11-15T04:40",
     ),
 ]
 
 # Текст в поле студента на момент запроса подсказки (student_text_snapshot).
-PLAN_SNAPSHOT = '1. Введение: студенты уже пользуются ИИ\n2. Аргумент о навыке письма\n3. Аргумент об академической честности\n4. Вывод: видимость процесса вместо запрета'
-DRAFT_SNAPSHOT = 'Запрет ИИ в вузах не решает проблему, а прячет её. Студенты всё равно пользуются ChatGPT, только без обратной связи и без следа в работе.\n\nПреподавателю честнее видеть процесс, чем проверять работу детектором: детекторы ошибаются.\n\nИИ лишает студента навыка письма, только если пишет вместо него. На олимпиаде по дебатам этот вопрос обсуждали как главный для образования.'
+PLAN_SNAPSHOT = (
+    "1. Introduction: students already use AI\n2. The writing skill argument\n"
+    "3. The academic integrity argument\n4. Conclusion: a visible process instead of a ban"
+)
+DRAFT_SNAPSHOT = (
+    "Banning AI at university does not solve the problem, it hides it. Students use ChatGPT anyway, "
+    "only without feedback and without any trace in their work.\n\n"
+    "It is fairer for the teacher to see the process than to check the work with a detector: "
+    "detectors make mistakes.\n\n"
+    "AI takes away the skill of writing only if it writes instead of the student. At a debate "
+    "tournament this question was discussed as the most important one for education."
+)
 
-# (work, stage, question, snapshot, hint, created_at)
+HINT_ANSWERS = Path(__file__).with_name("seed_hints.json")
+
+# (work, stage, question, snapshot, created_at); ответ берётся из HINT_ANSWERS по вопросу
 HINTS = [
+    (1, "plan", "Does my plan have all the parts?", PLAN_SNAPSHOT, "2026-11-08T14:00"),
     (
-        1, 'plan', 'Все ли части есть в плане?', PLAN_SNAPSHOT,
-        'Нет, в плане не хватает нескольких частей.\n\n1. Нет тезиса и вопроса. Что именно вы утверждаете: ИИ нужно разрешить, ограничить или регулировать? Пока вывод («видимость процесса вместо запрета») появляется только в конце, и непонятно, к чему ведут пункты 2 и 3. Сформулируйте для себя тезис одним предложением и проверьте, работает ли на него каждый раздел.\n\n2. Нет контраргументов и опровержения. Кто возразит против видимости процесса вместо запрета и почему? Добавьте раздел, где вы разбираете сильнейшую противоположную позицию. Также стоит спросить: как «видимость процесса» связана с навыком письма и честностью? Сейчас эта связь не показана.\n\n3. Нет доказательной базы. Какие данные подтвердят, что студенты уже пользуются ИИ? Ищите исследования и опросы об использовании генеративного ИИ в вузах, вузовские политики и работы по оценке учебного процесса (ключевые слова: process-based assessment, academic integrity, generative AI).',
-        '2026-11-08T14:00',
+        1, "plan", "What is it called when AI helps by asking questions?", PLAN_SNAPSHOT,
+        "2026-11-08T14:20",
     ),
+    (1, "draft", "Is my main thesis clear?", DRAFT_SNAPSHOT, "2026-11-10T16:00"),
+    (1, "draft", "How can I strengthen the integrity argument?", DRAFT_SNAPSHOT, "2026-11-12T16:10"),
+    (1, "draft", "Is the order of my paragraphs OK?", DRAFT_SNAPSHOT, "2026-11-12T16:30"),
+    (1, "draft", "Do I need a real-life example?", DRAFT_SNAPSHOT, "2026-11-12T16:45"),
+    (1, "final", "What should I check before submitting?", FINAL_TEXT, "2026-11-14T18:00"),
     (
-        1, 'plan', 'Как назвать понятие, когда ИИ помогает вопросами?', PLAN_SNAPSHOT,
-        '1. Для поиска можно использовать ключевые слова: «сократический метод», «скаффолдинг» (поддержка, которую постепенно снимают), «наставнический ИИ», «формирующая обратная связь». Скаффолдинг означает помощь, которая направляет человека к самостоятельному решению, а не даёт готовый результат.\n\n2. В плане нет контраргумента и опоры на данные. Какая позиция будет у противников ИИ и чем вы её проверите? Какие исследования или университетские политики покажут, что происходит на практике?\n\n3. В пункте 4 «видимость процесса» пока не определена. Что именно должно быть видно и кому? Где в плане вы объясните этот термин и то, чем помощь вопросами отличается от помощи готовым текстом?',
-        '2026-11-08T14:20',
+        2, "draft", "Is the counterargument in paragraph 2 developed enough?", SUBMISSIONS[9][3],
+        "2026-11-15T05:48",
     ),
-    (
-        1, 'draft', 'Понятен ли главный тезис?', DRAFT_SNAPSHOT,
-        'Главный тезис читается, но не сформулирован прямо: он угадывается как «запрет ИИ не работает, лучше сделать процесс прозрачным». Попробуйте сами выразить его одним предложением в начале текста. Что именно вы предлагаете вместо запрета?\n\n1. Слабые места. Утверждения «студенты всё равно пользуются» и «детекторы ошибаются» поданы как очевидные, но нужны данные: исследования использования ИИ студентами и оценки точности детекторов. Ищите по ключевым словам «AI detectors false positives», «student use of generative AI survey».\n\n2. Связность. Три абзаца пока не складываются в цепочку. Как третий абзац (про навык письма) связан с идеей видеть процесс? И что значит «ИИ пишет вместо студента» на практике: где проходит граница допустимого?\n\n3. Фраза про олимпиаду по дебатам слабая как опора: непонятно, какая олимпиада, кто и что утверждал. Либо уточните и подтвердите источником, либо уберите: сейчас это ссылка на авторитет без содержания.',
-        '2026-11-10T16:00',
-    ),
-    (
-        1, 'draft', 'Как усилить аргумент про честность?', DRAFT_SNAPSHOT,
-        '1. Сейчас «честнее» звучит как оценка без опоры. Уточните, о чьей честности речь: преподавателя перед студентом, студента перед преподавателем или системы оценивания в целом. Спросите себя: чем прозрачность процесса честнее проверки результата и какой критерий честности вы используете?\n\n2. Два утверждения требуют доказательств: «студенты всё равно пользуются» и «детекторы ошибаются». Ищите опросы студентов об использовании ИИ и исследования точности детекторов, в том числе ложных срабатываний. Ключевые слова: AI detection false positives, academic integrity, process-based assessment.\n\n3. Подумайте о контраргументе: если показывать процесс, студент может просто имитировать его. Как ваш подход это учитывает? Также абзац про олимпиаду по дебатам не связан с темой честности и не подкреплён: что именно обсуждали и почему это важно для вашего тезиса? Нужен проверяемый источник, иначе лучше убрать.',
-        '2026-11-12T16:10',
-    ),
-    (
-        1, 'draft', 'Нормальный ли порядок абзацев?', DRAFT_SNAPSHOT,
-        '1. Порядок абзацев: сейчас он держится на цепочке «запрет не работает → лучше видеть процесс → в чём реальный риск». Это логично, но связки между абзацами не видно. Спросите себя: какой главный тезис всей работы и какой абзац за него отвечает? Возможно, третий абзац (где риск возникает, а где нет) стоит поставить раньше, чтобы от него отталкивалась идея про процесс.\n\n2. Слабые места в аргументах: утверждения «студенты всё равно пользуются» и «детекторы ошибаются» нужно подкрепить. Здесь пригодятся опросы студентов об использовании ИИ и исследования точности детекторов (ключевые слова: false positives, AI text detection accuracy). Ссылка на олимпиаду по дебатам не доказывает ничего: что именно там решили и почему это значимо для образования?\n\n3. Чего не хватает: контраргумента. Что скажет сторонник запрета, и как вы ответите? Также уточните, что значит «видеть процесс»: черновики, история правок, устная защита? Без этого мысль остаётся общей.',
-        '2026-11-12T16:30',
-    ),
-    (
-        1, 'draft', 'Нужен ли пример из жизни?', DRAFT_SNAPSHOT,
-        '1. Да, пример нужен, но не любой. Сейчас три утверждения держатся на общих словах: «студенты всё равно пользуются», «детекторы ошибаются». Подумайте, какие данные или случаи это подтвердят: опросы студентов об использовании ИИ, исследования точности детекторов, реальные политики вузов (запрет против разрешения с раскрытием).\n\n2. Слабое место: ссылка на олимпиаду по дебатам. Это не доказательство, а факт обсуждения. Что именно там сказали и почему это важно для вашего тезиса? Если ответа нет, лучше заменить на источник по теме образования.\n\n3. Связность: третий абзац вводит условие («только если пишет вместо него»), но не объясняет, где граница между помощью и заменой письма. Как это связано с идеей «видеть процесс»? Проверьте, ведёт ли один абзац к другому. Ключевые слова для поиска: «academic integrity generative AI», «AI detectors false positives», «process-based assessment».',
-        '2026-11-12T16:45',
-    ),
-    (
-        1, 'final', 'Что проверить перед сдачей?', FINAL_TEXT,
-        'Чек-лист перед сдачей:\n\n1. Структура. Есть ли у работы вступление с чётко заявленным вопросом, основная часть и завершение? Сейчас у вас тезис, возражение и контраргумент, но не видно, где заканчивается один блок и начинается другой. Проверьте, что каждый абзац делает одну работу, а переходы между ними логичны. Подумайте, нужен ли ещё один довод в пользу вашей позиции, а не только ответ на возражение.\n\n2. Ссылки и доказательства. Утверждения «студенты всё равно пользуются», «детекторы ошибаются» и «формирующая обратная связь работает» сейчас без опоры. Какие данные или исследования их подтвердят? Ищите по ключевым словам: опросы об использовании ИИ студентами, точность детекторов ИИ-текста, формирующее оценивание. Проверьте единый формат оформления ссылок.\n\n3. Вывод и вопрос работы. Ваш вопрос: как сделать использование ИИ видимым. Отвечает ли заключение именно на него? Остаётся ли открытым, как на практике это организовать и какие риски у декларации (например, что студент может не указать правду)? Сверьте заключение с тезисом.',
-        '2026-11-14T18:00',
-    ),
-    (
-        2, 'draft', 'Достаточно ли раскрыт контраргумент во 2 абзаце?', SUBMISSIONS[9][3],
-        'Нет, пока контраргумент только обозначен, но не раскрыт. В абзаце одно предложение: позиция названа, а доводов и их проверки нет.\n\n1. Объясните логику противников запрета. Почему потеря навыка формулировать мысль считается серьёзной проблемой? Какой механизм они предполагают: студент перестаёт тренироваться, привыкает к готовому тексту, теряет критичность? Сейчас это просто утверждение.\n\n2. Подумайте, чем подкрепить. Фраза «считают, что» требует опоры: нужны эмпирические исследования об влиянии генеративных ИИ на письмо и обучение, а также работы по педагогике письма и академической честности. Ключевые слова для поиска: «generative AI and student writing», «cognitive offloading», «academic integrity policy».\n\n3. Свяжите с вашей позицией. В первом абзаце вы говорите об открытости использования. Как она отвечает на опасение о потере навыка? Прозрачность не обязательно сохраняет навык. Какой довод вы противопоставите, чтобы контраргумент не остался без ответа?',
-        '2026-11-15T05:48',
-    ),
-    (
-        2, 'draft', 'Напиши заключение к эссе', SUBMISSIONS[9][3],
-        'Я не могу написать заключение за вас, но помогу выйти на него самостоятельно. Что главное вы хотите, чтобы читатель вынес из эссе: какую позицию по открытому использованию ИИ вы отстаиваете? Какой один довод из основной части, по-вашему, самый сильный?',
-        '2026-11-15T06:05',
-    ),
+    (2, "draft", "Write the conclusion for my essay", SUBMISSIONS[9][3], "2026-11-15T06:05"),
 ]
 
 
@@ -146,22 +145,32 @@ def _at(value: str) -> datetime:
     return datetime.fromisoformat(value).replace(tzinfo=timezone.utc)
 
 
+def hint_answers() -> dict[str, str]:
+    data = json.loads(HINT_ANSWERS.read_text(encoding="utf-8"))
+    answers = {item["question"]: item["hint"] for item in data["hints"]}
+    missing = [question for _, _, question, _, _ in HINTS if not answers.get(question, "").strip()]
+    if missing:
+        raise RuntimeError(f"Нет ответов в {HINT_ANSWERS.name} для: {missing}. Запустите scripts/seed_hints.py")
+    return answers
+
+
 def seed(db: Session) -> None:
     if db.scalar(select(func.count()).select_from(User)):
         return
+    answers = hint_answers()
     teacher, aigerim, daniyar, _ = users = [
-        User(name="Преподаватель Демо", role="teacher"),
-        User(name="Айгерим Студент", role="student"),
-        User(name="Данияр Студент", role="student"),
-        User(name="Алия Студент", role="student"),
+        User(name="Demo Teacher", role="teacher"),
+        User(name="Aigerim Student", role="student"),
+        User(name="Daniyar Student", role="student"),
+        User(name="Aliya Student", role="student"),
     ]
     db.add_all(users)
     db.flush()
 
     assignment = Assignment(
         teacher_id=teacher.id,
-        title="Эссе «ИИ в высшем образовании»",
-        description="Аргументированное эссе на 800–1000 слов с опорой минимум на 3 источника.",
+        title="Essay: AI in higher education",
+        description="An argumentative essay of 800–1000 words drawing on at least 3 sources.",
         deadline=_at("2026-11-25T13:00"),
         created_at=_at("2026-11-03T06:00"),
     )
@@ -192,7 +201,7 @@ def seed(db: Session) -> None:
     )
     db.add_all(
         AIHintLog(work_id=works[work].id, stage=stage, student_question=question,
-                  student_text_snapshot=snapshot, hint=hint, created_at=_at(at))
-        for work, stage, question, snapshot, hint, at in HINTS
+                  student_text_snapshot=snapshot, hint=answers[question], created_at=_at(at))
+        for work, stage, question, snapshot, at in HINTS
     )
     db.commit()

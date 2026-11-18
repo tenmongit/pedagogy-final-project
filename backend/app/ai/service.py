@@ -57,8 +57,41 @@ class DefenseOutput(BaseModel):
     questions: list[Question] = Field(min_length=3, max_length=4)
 
 
+KAZAKH_LETTERS = frozenset("әғқңөұүһіӘҒҚҢӨҰҮҺІ")
+LANGUAGE_RULES = {
+    "ru": "Пиши весь ответ на русском языке.",
+    "kk": "Пиши весь ответ на казахском языке.",
+    "en": "Пиши весь ответ на английском языке. Write the whole answer in English.",
+}
+
+
+def detect_language(text: str) -> str | None:
+    """Язык работы по буквам: промпт на русском, и без явного указания модель иногда
+    отвечает по-русски на английскую работу."""
+    letters = [char for char in text if char.isalpha()]
+    if not letters:
+        return None
+    cyrillic = [char for char in letters if "Ѐ" <= char <= "ӿ"]
+    if len(cyrillic) * 2 < len(letters):
+        return "en"
+    kazakh = sum(char in KAZAKH_LETTERS for char in cyrillic)
+    return "kk" if kazakh * 50 >= len(cyrillic) else "ru"
+
+
+def _language_rule(*texts: str) -> str:
+    """Язык первого непустого текста: работа, а если её нет — вопрос (раздел 7)."""
+    for text in texts:
+        language = detect_language(text)
+        if language:
+            return f"\n{LANGUAGE_RULES[language]}"
+    return ""
+
+
 def generate_hint(ctx: HintContext) -> str:
-    system = f"{prompts.HINT}\nЭтап {ctx.stage_kind}. {prompts.STAGE_GUIDANCE[ctx.stage_kind]}"
+    system = (
+        f"{prompts.HINT}\nЭтап {ctx.stage_kind}. {prompts.STAGE_GUIDANCE[ctx.stage_kind]}"
+        f"{_language_rule(ctx.draft, ctx.question)}"
+    )
     data = "\n\n".join(
         [
             prompts.data_tag("student_text", ctx.draft),
@@ -85,7 +118,8 @@ def generate_defense_questions(ctx: DefenseContext) -> list[Question]:
             ("hint_log", hints),
         )
     )
-    response = provider.complete(prompts.DEFENSE, data, json_output=True)
+    system = f"{prompts.DEFENSE}{_language_rule(ctx.final_text)}"
+    response = provider.complete(system, data, json_output=True)
     try:
         return DefenseOutput.model_validate_json(response, strict=True).questions
     except ValidationError:

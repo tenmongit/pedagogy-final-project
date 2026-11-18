@@ -1,0 +1,52 @@
+{
+  "model": "claude-sonnet-5-5",
+  "provider": "anthropic",
+  "generated_at": "2026-11-18T11:40:21Z",
+  "hints": [
+    {
+      "stage": "plan",
+      "question": "Does my plan have all the parts?",
+      "hint": "1. Your plan has no clear thesis. After the introduction, what exactly do you claim? Is your position stated early, or does it only appear in the conclusion?\n\n2. Sections 2 and 3 both seem to present problems. Where is the opposing view, such as benefits of AI or reasons to allow it, and where do you respond to it? Where will your evidence go?\n\n3. Your conclusion proposes a visible process, but no body section prepares it. What would make that idea feel earned? Consider whether it needs its own section, and what it would look like in practice."
+    },
+    {
+      "stage": "plan",
+      "question": "What is it called when AI helps by asking questions?",
+      "hint": "1. The approach is called Socratic questioning (or Socratic tutoring). The helper asks guiding questions instead of giving answers, so you reach conclusions yourself. A related term is scaffolding: support that is gradually reduced as you improve.\n\n2. Your plan has no clear thesis. Is it for or against AI in education, or a middle position? Also, where is the counterargument, and which side does each of your two arguments support?\n\n3. Your conclusion mentions a \"visible process,\" but no section prepares it. What evidence will you use, and what would that process look like in practice? Useful search keywords: \"process-based assessment,\" \"AI literacy,\" \"formative feedback.\""
+    },
+    {
+      "stage": "draft",
+      "question": "Is my main thesis clear?",
+      "hint": "1. Your thesis is not yet clear. The text makes three claims: bans fail, process-based assessment is fairer than detectors, and AI harms writing only when it replaces the student. Which one is your main position, and how do the others support it?\n\n2. Two claims need evidence: \"students use ChatGPT anyway\" and \"detectors make mistakes\". Look for student surveys on AI use and empirical studies of detector accuracy and false positives.\n\n3. The debate tournament is not an argument, since it shows only that people discussed the topic. What reasoning or evidence would persuade a skeptical reader that this question matters most for education?"
+    },
+    {
+      "stage": "draft",
+      "question": "How can I strengthen the integrity argument?",
+      "hint": "1. Define integrity first. What exactly counts as a violation: hidden use, copying, or unacknowledged help? Without this, your argument that a visible process is fairer than a ban stays vague.\n\n2. Two claims need evidence: that students use AI anyway, and that detectors err. Look for university surveys and studies on false-positive rates. Keywords: \"AI detector accuracy\", \"false positives\", \"student AI use survey\".\n\n3. The debate tournament is an anecdote, not support. Also ask: how exactly would a teacher see the process, and what could go wrong, such as extra workload or students faking drafts?"
+    },
+    {
+      "stage": "draft",
+      "question": "Is the order of my paragraphs OK?",
+      "hint": "1) Your order is not yet clear because there is no stated main claim. Ask yourself: what is your thesis, and does each paragraph build toward it? The third paragraph, about when AI harms writing skill, may need to come earlier as the core question.\n\n2) Several claims need evidence: that students use AI anyway, and that detectors make mistakes. Look for surveys on student AI use and research on detector accuracy and false positives.\n\n3) A debate discussion shows interest in the topic, not that it is important. What stronger support could you use? Also, how does \"seeing the process\" connect to the skill argument?"
+    },
+    {
+      "stage": "draft",
+      "question": "Do I need a real-life example?",
+      "hint": "1. Yes, but evidence matters more than anecdote. \"Students use ChatGPT anyway\" and \"detectors make mistakes\" are factual claims. Look for student surveys on AI use and studies of detector accuracy and false positives.\n\n2. The debate tournament is too vague to work as support. Who judged the question \"most important,\" and on what grounds? Ask yourself whether it proves anything or only shows the topic is popular.\n\n3. Your fairness argument needs a concrete case of \"seeing the process.\" What would a teacher actually look at, and what would a skeptic say about the extra workload or students who fake the process?"
+    },
+    {
+      "stage": "final",
+      "question": "What should I check before submitting?",
+      "hint": "1. Structure: Check that you have a clear thesis, a counterargument with a response, and a closing part. Right now the text ends without a conclusion. Does each paragraph do one job and lead to the next?\n\n2. References: Claims such as \"detectors make mistakes\" and \"feedback leaves the work to the student\" need evidence. Look for peer-reviewed studies on formative feedback and on AI-detector accuracy. Check that the citation style is consistent.\n\n3. Conclusion: Does it answer the question you raised, how to make AI use visible? Also ask whether versions and declarations could be faked, and whether you address that weakness."
+    },
+    {
+      "stage": "draft",
+      "question": "Is the counterargument in paragraph 2 developed enough?",
+      "hint": "1. No, it is not developed yet. Paragraph 2 only states the opposing view in one sentence. What reasoning or evidence would its supporters give? Who exactly are these \"supporters\": teachers, institutions, researchers?\n\n2. The claim that AI takes away the ability to express thoughts is presented as a belief, not an argument. What would show it is true or false? Look for studies on writing skills and AI use, and for university policy documents.\n\n3. Your thesis needs a response to this view. Does it fully fail, or is it partly right? Also, \"almost every student\" in paragraph 1 needs a survey or statistic as support."
+    },
+    {
+      "stage": "draft",
+      "question": "Write the conclusion for my essay",
+      "hint": "I'm sorry, but I can't write the conclusion for you, since it needs to be your own work. What is the main claim your essay argues for, and which point from your body paragraphs do you most want readers to remember?"
+    }
+  ]
+}
